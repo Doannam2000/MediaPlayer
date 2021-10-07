@@ -4,9 +4,17 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="..\:/Code/Kotlin/DDWANMediaPlayer/app/src/main/res/drawable/custom_editext.xml" value="0.3828125" />
+        <entry key="..\:/Code/Kotlin/DDWANMediaPlayer/app/src/main/res/drawable/gradient.xml" value="0.3828125" />
+        <entry key="..\:/Code/Kotlin/DDWANMediaPlayer/app/src/main/res/drawable/ic_baseline_keyboard_arrow_left_24.xml" value="0.37864583333333335" />
+        <entry key="..\:/Code/Kotlin/DDWANMediaPlayer/app/src/main/res/drawable/ic_baseline_pause_24.xml" value="0.3828125" />
         <entry key="..\:/Code/Kotlin/DDWANMediaPlayer/app/src/main/res/layout/activity_main.xml" value="0.36666666666666664" />
+        <entry key="..\:/Code/Kotlin/DDWANMediaPlayer/app/src/main/res/layout/activity_play.xml" value="0.36666666666666664" />
+        <entry key="..\:/Code/Kotlin/DDWANMediaPlayer/app/src/main/res/layout/fragment_list.xml" value="0.35260416666666666" />
+        <entry key="..\:/Code/Kotlin/DDWANMediaPlayer/app/src/main/res/layout/fragment_play.xml" value="0.36666666666666664" />
+        <entry key="..\:/Code/Kotlin/DDWANMediaPlayer/app/src/main/res/layout/item.xml" value="0.36666666666666664" />
         <entry key="..\:/Code/Kotlin/DDWANMediaPlayer/app/src/main/res/layout/list.xml" value="0.36666666666666664" />
         <entry key="..\:/Code/Kotlin/DDWANMediaPlayer/app/src/main/res/layout/play.xml" value="0.36666666666666664" />
+        <entry key="..\:/Code/Kotlin/DDWANMediaPlayer/app/src/main/res/menu/menu.xml" value="0.36666666666666664" />
       </map>
     </option>
   </component>

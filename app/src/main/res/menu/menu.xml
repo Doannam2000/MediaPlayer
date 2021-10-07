@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/repeatAll"
+        android:title="Lặp toàn bộ"/>
+    <item android:id="@+id/repeat"
+        android:title="Lặp bài hát hiện tại"/>
+    <item android:id="@+id/noRepeat"
+        android:title="Không lặp"/>
+    <item android:id="@+id/shuffle"
+        android:title="Ngẫu nhiên"/>
+</menu>
