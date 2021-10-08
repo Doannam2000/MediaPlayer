@@ -62,6 +62,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
     <ImageView
+        android:interpolator="@anim/anim_rotate"
         android:id="@+id/imageView"
         android:scaleType="fitEnd"
         android:layout_width="300dp"

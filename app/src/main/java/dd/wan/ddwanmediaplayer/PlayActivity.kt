@@ -1,5 +1,6 @@
 package dd.wan.ddwanmediaplayer
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -7,6 +8,7 @@ import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.PopupMenu
 import android.widget.SeekBar
@@ -24,11 +26,15 @@ class PlayActivity : AppCompatActivity() {
     private var currentTime = 0
     private var list = ArrayList<Podcast>()
     var action = 0
-    var sdf = SimpleDateFormat("mm:ss")
     var check = true
+
+    @SuppressLint("SimpleDateFormat")
+    val sdf = SimpleDateFormat("mm:ss")
+
+
     private val broadcastPosition = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
-            var bundle = p1?.extras
+            val bundle = p1?.extras
             if (bundle == null)
                 return
             else {
@@ -41,23 +47,18 @@ class PlayActivity : AppCompatActivity() {
 
     private val broadcastPodcast = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
-            var bundle = p1?.extras
+            val bundle = p1?.extras
             if (bundle == null)
                 return
             else {
                 currentTime = bundle.getInt("currentTime")
                 type = bundle.getInt("type")
                 action = bundle.getInt("action")
-                var uri = bundle.getString("Uri") as String
+                val uri = bundle.getString("Uri") as String
                 for (i in 0 until list.size) {
                     if (list[i].uri == uri)
-                        position =  i
+                        position = i
                 }
-                check = bundle.getBoolean("check")
-                if(check)
-                    btnPlay.setImageResource(R.drawable.ic_baseline_pause_24)
-                else
-                    btnPlay.setImageResource(R.drawable.ic_outline_play_arrow_24)
                 updateUI()
                 seekBar.progress = currentTime
                 time1.text = sdf.format(currentTime)
@@ -65,33 +66,44 @@ class PlayActivity : AppCompatActivity() {
         }
     }
 
+    private val broadcastPlay = object : BroadcastReceiver() {
+        override fun onReceive(p0: Context?, p1: Intent?) {
+            check = p1!!.extras!!.getBoolean("checked")
+            if (check)
+                btnPlay.setImageResource(R.drawable.ic_baseline_pause_24)
+            else
+                btnPlay.setImageResource(R.drawable.ic_outline_play_arrow_24)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_play)
         list = ReadPodcast(this).loadSong()
-        var bundle = intent.extras
+        val bundle = intent.extras
         currentTime = bundle!!.getInt("currentTime")
-        var uri = bundle.getString("Uri")
+        val uri = bundle.getString("Uri")
         for (i in 0 until list.size) {
             if (list[i].uri == uri)
-                position =  i
+                position = i
         }
+        imageView.animation = AnimationUtils.loadAnimation(this,R.anim.anim_rotate)
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPosition, IntentFilter("Current_Position"))
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
         updateUI()
         btnPlay.setOnClickListener {
             connectService(2)
         }
 
         btnBack.setOnClickListener {
-            currentTime = 0
             connectService(1)
         }
 
         btnNext.setOnClickListener {
-            currentTime = 0
             connectService(3)
         }
 
@@ -110,7 +122,7 @@ class PlayActivity : AppCompatActivity() {
             }
         }
         setting.setOnClickListener { it ->
-            var pop = PopupMenu(this, it)
+            val pop = PopupMenu(this, it)
             pop.menuInflater.inflate(R.menu.menu, pop.menu)
             pop.show()
             pop.setOnMenuItemClickListener {
@@ -125,20 +137,24 @@ class PlayActivity : AppCompatActivity() {
             }
         }
         previous.setOnClickListener {
-            var intent = Intent(this, MainActivity::class.java)
-            var bundle = Bundle()
-            bundle.putString("Uri", list[position].uri)
-            bundle.putInt("type", type)
-            bundle.putInt("action", action)
-            bundle.putInt("currentTime", currentTime)
-            intent.putExtras(bundle)
+            val intent = Intent(this, MainActivity::class.java)
+            val bundle1 = Bundle()
+            bundle1.putString("Uri", list[position].uri)
+            bundle1.putInt("type", type)
+            bundle1.putInt("action", action)
+            bundle1.putInt("currentTime", currentTime)
+            bundle1.putBoolean("checked",check)
+            intent.putExtras(bundle1)
             startActivity(intent)
+            overridePendingTransition(R.anim.left_to_right,R.anim.left_to_right_out)
         }
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
             }
+
             override fun onStartTrackingTouch(p0: SeekBar?) {
             }
+
             override fun onStopTrackingTouch(p0: SeekBar?) {
                 p0?.progress?.let {
                     currentTime = it
@@ -152,12 +168,13 @@ class PlayActivity : AppCompatActivity() {
     fun updateUI() {
         if (list[position].image.isNotEmpty()) {
             val image = list[position].image
-            imageView.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image!!.size))
+            imageView.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+        } else {
+            imageView.setImageResource(R.drawable.music_icon)
         }
-        imageView.animation = AnimationUtils.loadAnimation(this, R.anim.anim_rotate)
-        name1.text = list.get(position).title
+        name1.text = list[position].title
         val string = "${list[position].title} \n\n ${list[position].artist}"
-        name.setText(string)
+        name.text = string
 
         btnPlay.setImageResource(R.drawable.ic_baseline_pause_24)
         time2.text = sdf.format(list[position].duration)
@@ -165,8 +182,8 @@ class PlayActivity : AppCompatActivity() {
     }
 
     fun connectService(ac: Int) {
-        var intent = Intent(this, Broadcast::class.java)
-        var bundle = Bundle()
+        val intent = Intent(this, Broadcast::class.java)
+        val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
         bundle.putInt("type", type)
         bundle.putInt("action", ac)
@@ -180,5 +197,6 @@ class PlayActivity : AppCompatActivity() {
         super.onDestroy()
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPosition)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPodcast)
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPlay)
     }
 }

@@ -1,7 +1,7 @@
 package dd.wan.ddwanmediaplayer
 
 import android.Manifest
-import android.annotation.SuppressLint
+import android.app.ActivityOptions
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.pm.PackageManager
@@ -12,8 +12,12 @@ import androidx.core.app.ActivityCompat
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.BitmapFactory
+import android.os.Handler
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
-import android.widget.EditText
+import android.widget.TextView
+import androidx.appcompat.widget.SearchView
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -29,31 +33,51 @@ class MainActivity : AppCompatActivity() {
     var list = ArrayList<Podcast>()
     var currentTime = 0
     var check = true
+    var listP = ArrayList<Podcast>()
+    lateinit var adapter:RecyclerAdapter
 
+    val handle = Handler()
+    val run = object :Runnable{
+        override fun run() {
+            var text = searchView.text
+            list.clear()
+            for (item in listP) {
+                if (item.title.uppercase().contains(text.toString().uppercase())) {
+                    list.add(item)
+                }
+            }
+            adapter.notifyDataSetChanged()
+        }
+    }
+
+    private val broadcastPlay = object : BroadcastReceiver() {
+        override fun onReceive(p0: Context?, p1: Intent?) {
+            check = p1!!.extras!!.getBoolean("checked")
+            if (check)
+                btnPlayN.setImageResource(R.drawable.ic_baseline_pause_24)
+            else
+                btnPlayN.setImageResource(R.drawable.ic_outline_play_arrow_24)
+        }
+    }
 
     private val broadcastPodcast = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
-            var bundle = p1?.extras
+            val bundle = p1?.extras
             if (bundle == null)
                 return
             else {
                 currentTime = bundle.getInt("currentTime")
                 type = bundle.getInt("type")
-                var uri = bundle.getString("Uri") as String
+                val uri = bundle.getString("Uri") as String
                 for (i in 0 until list.size) {
                     if (list[i].uri == uri)
                         position = i
                 }
-                check = bundle.getBoolean("check")
-                if (check)
-                    btnPlayN.setImageResource(R.drawable.ic_baseline_pause_24)
-                else
-                    btnPlayN.setImageResource(R.drawable.ic_outline_play_arrow_24)
                 nameSong.text = list[position].title
                 nameAuth.text = list[position].artist
                 if (list[position].image.isNotEmpty()) {
-                    var image = list[position].image
-                    imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image!!.size))
+                    val image = list[position].image
+                    imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
                 }
             }
         }
@@ -64,15 +88,13 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         requestPermission()
         list = ReadPodcast(this).loadSong()
-        var editSearch: EditText = findViewById(R.id.edit_search)
-        var recyclerView: RecyclerView = findViewById(R.id.list_Podcast)
+        var searchView: TextView = findViewById(R.id.searchView)
+        val recyclerView: RecyclerView = findViewById(R.id.list_Podcast)
 
-        LocalBroadcastManager.getInstance(this)
-            .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
         val bundle = intent.extras
         if (bundle != null) {
             layoutPodcast.visibility = View.VISIBLE
-            var uri = bundle.getString("Uri")
+            val uri = bundle.getString("Uri")
             for (i in list.indices) {
                 if (list[i].uri == uri)
                     position = i
@@ -80,34 +102,39 @@ class MainActivity : AppCompatActivity() {
             nameSong.text = list[position].title
             nameAuth.text = list[position].artist
             if (list[position].image.isNotEmpty()) {
-                var image = list[position].image
-                imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image!!.size))
+                val image = list[position].image
+                imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
             }
+            check = bundle.getBoolean("checked")
+            if (check)
+                btnPlayN.setImageResource(R.drawable.ic_baseline_pause_24)
+            else
+                btnPlayN.setImageResource(R.drawable.ic_outline_play_arrow_24)
         }
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.setHasFixedSize(true)
-        var adapter = RecyclerAdapter(list)
+        adapter = RecyclerAdapter(list)
         adapter.setCallback {
-            var podcast = list[it]
-            var bundle = Bundle()
-            bundle.putString("Uri", podcast.uri)
-            bundle.putInt("type", type)
-            bundle.putInt("currentTime", currentTime)
-            bundle.putInt("action", 0)
+            val podcast = list[it]
+            val bundle1 = Bundle()
+            bundle1.putString("Uri", podcast.uri)
+            bundle1.putInt("type", type)
+            bundle1.putInt("currentTime", 0)
+            bundle1.putInt("action", 0)
+            val intent11 = Intent(this, MyService::class.java)
+            intent11.putExtras(bundle1)
+            startService(intent11)
 
-            val intent = Intent(this, MyService::class.java)
-            intent.putExtras(bundle)
-            startService(intent)
-
-            var intent1 = Intent(this, PlayActivity::class.java)
-            intent1.putExtras(bundle)
-            startActivity(intent1.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK))
+            val intent = Intent(this, PlayActivity::class.java)
+            intent.putExtras(bundle1)
+            startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK))
         }
         recyclerView.adapter = adapter
 
         btnExit.setOnClickListener {
             connectService(4)
+            layoutPodcast.visibility = View.GONE
         }
         btnNextN.setOnClickListener { connectService(3) }
         btnPrevious.setOnClickListener { connectService(1) }
@@ -115,15 +142,39 @@ class MainActivity : AppCompatActivity() {
         layoutPodcast.setOnClickListener {
             finish()
         }
+
+
+        listP.addAll(list)
+
+
+        searchView.addTextChangedListener( object:TextWatcher{
+            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+            }
+
+            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+            }
+
+            override fun afterTextChanged(p0: Editable?) {
+                handle.removeCallbacks(run)
+                handle.postDelayed(run,500)
+            }
+        })
+
+
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
+
     }
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
-        grantResults: IntArray
+        grantResults: IntArray,
     ) {
         if (requestCode == 123) {
-            if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 startActivity(
                     Intent(
                         this,
@@ -138,7 +189,7 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
-    fun requestPermission() {
+    private fun requestPermission() {
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.READ_EXTERNAL_STORAGE
@@ -155,9 +206,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun connectService(ac: Int) {
-        var intent = Intent(this, Broadcast::class.java)
-        var bundle = Bundle()
+    private fun connectService(ac: Int) {
+        val intent = Intent(this, Broadcast::class.java)
+        val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
         bundle.putInt("type", type)
         bundle.putInt("action", ac)
@@ -170,5 +221,9 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         LocalBroadcastManager.getInstance(this)
             .unregisterReceiver(broadcastPodcast)
+        LocalBroadcastManager.getInstance(this)
+            .unregisterReceiver(broadcastPlay)
     }
+
+
 }

@@ -22,6 +22,45 @@ class MyService : Service() {
     var position = 0
     var currentTime = 0
     var action = 0
+    var check = true
+    val handle = Handler()
+    var run = object : Runnable {
+        override fun run() {
+            mediaPlayer.setOnCompletionListener {
+                currentTime = 0
+                when (type) {
+                    0 -> {
+                        position++
+                        if (position == list.size) {
+                            position = 0
+                        }
+                        playSong()
+                        sendDataToActivity()
+                    }
+                    1 -> {
+                        playSong()
+                    }
+                    2 -> {
+                        list.shuffle()
+                        playSong()
+                        sendDataToActivity()
+                    }
+                    3 -> {
+                        position++
+                        if (position == list.size)
+                            mediaPlayer.stop()
+                        else {
+                            playSong()
+                            sendDataToActivity()
+                        }
+                    }
+
+                }
+            }
+            sendCurrentPosition()
+            handle.postDelayed(this, 500)
+        }
+    }
 
     override fun onBind(p0: Intent?): IBinder? {
         return null
@@ -29,9 +68,9 @@ class MyService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         list = ReadPodcast(this).loadSong()
-        var bundle = intent!!.extras
+        val bundle = intent!!.extras
         action = bundle!!.getInt("action")
-        var uri = bundle.getString("Uri")
+        val uri = bundle.getString("Uri")
         for (i in list.indices) {
             if (list[i].uri == uri)
                 position = i
@@ -44,6 +83,8 @@ class MyService : Service() {
                 playSong()
                 updateTime()
                 createNotification()
+                check = true
+                playOrPause()
             }
             1 -> {
                 if (type == 2) {
@@ -58,18 +99,19 @@ class MyService : Service() {
                 playSong()
                 updateTime()
                 createNotification()
-                sendDataToActivity(true)
+                sendDataToActivity()
             }
             2 -> {
                 if (mediaPlayer.isPlaying) {
                     mediaPlayer.pause()
-                    sendDataToActivity(false)
+                    check = false
+                    playOrPause()
                 } else {
                     mediaPlayer.start()
-                    sendDataToActivity(true)
+                    check = true
+                    playOrPause()
                 }
                 createNotification()
-
             }
             3 -> {
                 if (type == 2) {
@@ -84,7 +126,7 @@ class MyService : Service() {
                 playSong()
                 updateTime()
                 createNotification()
-                sendDataToActivity(true)
+                sendDataToActivity()
             }
             4 -> {
                 stopSelf()
@@ -97,14 +139,14 @@ class MyService : Service() {
 
     @SuppressLint("RemoteViewLayout")
     fun createNotification() {
-        var intent = Intent(this, PlayActivity::class.java)
-        var bundle = Bundle()
+        val intent = Intent(this, PlayActivity::class.java)
+        val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
         bundle.putInt("type", type)
         bundle.putInt("action", action)
         bundle.putInt("currentTime", mediaPlayer.currentPosition)
         intent.putExtras(bundle)
-        var pendingIntent =
+        val pendingIntent =
             PendingIntent.getActivity(
                 this,
                 123,
@@ -113,7 +155,7 @@ class MyService : Service() {
             )
         val podcast = list[position]
 
-        var remoteView = RemoteViews(packageName, R.layout.custom_notification)
+        val remoteView = RemoteViews(packageName, R.layout.custom_notification)
         remoteView.setTextViewText(R.id.name, podcast.title)
         remoteView.setTextViewText(R.id.name2, podcast.artist)
 
@@ -130,9 +172,9 @@ class MyService : Service() {
         if (podcast.image.isNotEmpty())
             remoteView.setImageViewBitmap(
                 R.id.imageView,
-                BitmapFactory.decodeByteArray(podcast.image, 0, podcast.image!!.size)
+                BitmapFactory.decodeByteArray(podcast.image, 0, podcast.image.size)
             )
-        var notification = NotificationCompat.Builder(this, "DDWAN")
+        val notification = NotificationCompat.Builder(this, "DDWAN")
             .setSmallIcon(R.drawable.music_icon)
             .setContentIntent(pendingIntent)
             .setCustomContentView(remoteView)
@@ -141,8 +183,8 @@ class MyService : Service() {
     }
 
     private fun sendAction(ac: Int): PendingIntent? {
-        var intent = Intent(this, Broadcast::class.java)
-        var bundle = Bundle()
+        val intent = Intent(this, Broadcast::class.java)
+        val bundle = Bundle()
         bundle.putInt("position", position)
         bundle.putInt("type", type)
         bundle.putInt("action", ac)
@@ -173,63 +215,37 @@ class MyService : Service() {
         mediaPlayer.start()
     }
 
-    fun updateTime() {
-        var handle = Handler()
-        handle.postDelayed(object : Runnable {
-            override fun run() {
-                mediaPlayer.setOnCompletionListener {
-                    currentTime = 0
-                    when (type) {
-                        0 -> {
-                            position++
-                            if (position == list.size) {
-                                position = 0
-                            }
-                            playSong()
-                            sendDataToActivity(true)
-                        }
-                        1 -> {
-                            playSong()
-                        }
-                        2 -> {
-                            list.shuffle()
-                            playSong()
-                            sendDataToActivity(true)
-                        }
-                        3 -> {
-                            position++
-                            if (position == list.size)
-                                mediaPlayer.stop()
-                            else {
-                                playSong()
-                                sendDataToActivity(true)
-                            }
-
-                        }
-                    }
-                }
-                sendCurrentPosition()
-                handle.postDelayed(this, 500)
-            }
-        }, 100)
+    private fun updateTime() {
+        handle.removeCallbacks(run)
+        handle.postDelayed(run, 100)
     }
 
     fun sendCurrentPosition() {
-        var intent = Intent("Current_Position")
-        var bundle = Bundle()
+        val intent = Intent("Current_Position")
+        val bundle = Bundle()
         bundle.putInt("currentPosition", mediaPlayer.currentPosition)
         intent.putExtras(bundle)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
-    fun sendDataToActivity(check:Boolean) {
-        var intent = Intent("Current_Song")
-        var bundle = Bundle()
+    fun sendDataToActivity() {
+        val intent = Intent("Current_Song")
+        val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
         bundle.putInt("type", type)
         bundle.putInt("action", action)
         bundle.putInt("currentTime",currentTime)
-        bundle.putBoolean("check", check)
+        intent.putExtras(bundle)
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+        check = true
+        playOrPause()
+    }
+
+    fun playOrPause()
+    {
+        var intent = Intent("Pause_Play")
+        val bundle = Bundle()
+        bundle.putBoolean("checked", check)
         intent.putExtras(bundle)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
