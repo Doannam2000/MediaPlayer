@@ -58,15 +58,18 @@ class MyService : Service() {
                 playSong()
                 updateTime()
                 createNotification()
-                sendDataToActivity()
+                sendDataToActivity(true)
             }
             2 -> {
                 if (mediaPlayer.isPlaying) {
                     mediaPlayer.pause()
+                    sendDataToActivity(false)
                 } else {
                     mediaPlayer.start()
+                    sendDataToActivity(true)
                 }
                 createNotification()
+
             }
             3 -> {
                 if (type == 2) {
@@ -81,7 +84,7 @@ class MyService : Service() {
                 playSong()
                 updateTime()
                 createNotification()
-                sendDataToActivity()
+                sendDataToActivity(true)
             }
             4 -> {
                 stopSelf()
@@ -143,7 +146,7 @@ class MyService : Service() {
         bundle.putInt("position", position)
         bundle.putInt("type", type)
         bundle.putInt("action", ac)
-        bundle.putInt("currentTime", 0)
+        bundle.putInt("currentTime", currentTime)
         intent.putExtras(bundle)
         return PendingIntent.getBroadcast(
             this.applicationContext,
@@ -183,7 +186,7 @@ class MyService : Service() {
                                 position = 0
                             }
                             playSong()
-                            sendDataToActivity()
+                            sendDataToActivity(true)
                         }
                         1 -> {
                             playSong()
@@ -191,7 +194,7 @@ class MyService : Service() {
                         2 -> {
                             list.shuffle()
                             playSong()
-                            sendDataToActivity()
+                            sendDataToActivity(true)
                         }
                         3 -> {
                             position++
@@ -199,7 +202,7 @@ class MyService : Service() {
                                 mediaPlayer.stop()
                             else {
                                 playSong()
-                                sendDataToActivity()
+                                sendDataToActivity(true)
                             }
 
                         }
@@ -219,13 +222,14 @@ class MyService : Service() {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
-    fun sendDataToActivity() {
+    fun sendDataToActivity(check:Boolean) {
         var intent = Intent("Current_Song")
         var bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
         bundle.putInt("type", type)
         bundle.putInt("action", action)
-        bundle.putInt("currentTime", 0)
+        bundle.putInt("currentTime",currentTime)
+        bundle.putBoolean("check", check)
         intent.putExtras(bundle)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }

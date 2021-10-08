@@ -26,7 +26,6 @@ class PlayActivity : AppCompatActivity() {
     var action = 0
     var sdf = SimpleDateFormat("mm:ss")
     var check = true
-
     private val broadcastPosition = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
             var bundle = p1?.extras
@@ -54,6 +53,11 @@ class PlayActivity : AppCompatActivity() {
                     if (list[i].uri == uri)
                         position =  i
                 }
+                check = bundle.getBoolean("check")
+                if(check)
+                    btnPlay.setImageResource(R.drawable.ic_baseline_pause_24)
+                else
+                    btnPlay.setImageResource(R.drawable.ic_outline_play_arrow_24)
                 updateUI()
                 seekBar.progress = currentTime
                 time1.text = sdf.format(currentTime)
@@ -65,7 +69,6 @@ class PlayActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_play)
         list = ReadPodcast(this).loadSong()
-
         var bundle = intent.extras
         currentTime = bundle!!.getInt("currentTime")
         var uri = bundle.getString("Uri")
@@ -79,26 +82,17 @@ class PlayActivity : AppCompatActivity() {
             .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
         updateUI()
         btnPlay.setOnClickListener {
-            if (check) {
-                btnPlay.setImageResource(R.drawable.ic_outline_play_arrow_24)
-                check = false
-            } else {
-                check = true
-                btnPlay.setImageResource(R.drawable.ic_baseline_pause_24)
-            }
             connectService(2)
         }
 
         btnBack.setOnClickListener {
             currentTime = 0
             connectService(1)
-            updateUI()
         }
 
         btnNext.setOnClickListener {
             currentTime = 0
             connectService(3)
-            updateUI()
         }
 
         btnBackward.setOnClickListener {
@@ -131,7 +125,14 @@ class PlayActivity : AppCompatActivity() {
             }
         }
         previous.setOnClickListener {
-            startActivity(Intent(this, MainActivity::class.java))
+            var intent = Intent(this, MainActivity::class.java)
+            var bundle = Bundle()
+            bundle.putString("Uri", list[position].uri)
+            bundle.putInt("type", type)
+            bundle.putInt("action", action)
+            bundle.putInt("currentTime", currentTime)
+            intent.putExtras(bundle)
+            startActivity(intent)
         }
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
