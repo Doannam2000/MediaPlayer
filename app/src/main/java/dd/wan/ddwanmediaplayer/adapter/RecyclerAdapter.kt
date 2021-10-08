@@ -44,7 +44,6 @@ class RecyclerAdapter(var list: ArrayList<Podcast>) :
                 var image = list[adapterPosition].image
                 imagePodcast.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image!!.size))
             }
-
         }
 
         init {

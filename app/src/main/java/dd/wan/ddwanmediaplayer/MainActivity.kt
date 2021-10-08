@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dd.wan.ddwanmediaplayer.adapter.RecyclerAdapter
 import dd.wan.ddwanmediaplayer.model.Podcast
+import dd.wan.ddwanmediaplayer.model.ReadPodcast
 
 
 class MainActivity : AppCompatActivity() {
@@ -27,14 +28,27 @@ class MainActivity : AppCompatActivity() {
 
         var editSearch: EditText = findViewById(R.id.edit_search)
         var recyclerView: RecyclerView = findViewById(R.id.list_Podcast)
-        var list = loadSong()
+        var list = ReadPodcast(this).loadSong()
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.setHasFixedSize(true)
         var adapter = RecyclerAdapter(list)
         adapter.setCallback {
-            var intent = Intent(this,PlayActivity::class.java)
-            intent.putExtra("position",it)
-            startActivity(intent)
+
+            var bundle = Bundle()
+            bundle.putString("Uri", list[it].uri)
+            bundle.putInt("type", 0)
+            bundle.putInt("currentTime", 0)
+            bundle.putInt("action", 0)
+
+            val intent = Intent(this, MyService::class.java)
+            intent.putExtras(bundle)
+            startService(intent)
+
+
+            var intent1 = Intent(this,PlayActivity::class.java)
+            intent1.putExtras(bundle)
+            startActivity(intent1.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK))
+
         }
         recyclerView.adapter = adapter
     }
@@ -66,37 +80,6 @@ class MainActivity : AppCompatActivity() {
             )
         }
     }
-    @SuppressLint("Range")
-    fun loadSong(): ArrayList<Podcast> {
-        var list = ArrayList<Podcast>()
-        var uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-        var rs = this.contentResolver.query(
-            uri,
-            arrayOf(
-                MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.TITLE,
-                MediaStore.Audio.Media.DATA, MediaStore.Audio.Media.DISPLAY_NAME,
-                MediaStore.Audio.Media.DURATION, MediaStore.Audio.Media.ALBUM_ID),
-            MediaStore.Audio.Media.IS_MUSIC + " != 0",
-            null,
-            null
-        )
-        if (rs != null) {
-            while (rs!!.moveToNext()) {
-                var uri = rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.DATA))
-                var title = rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.TITLE))
-                var artist = rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.ARTIST))
-                var media = MediaMetadataRetriever()
-                media.setDataSource(uri)
-                var bitmap:ByteArray? = media.embeddedPicture
-                if(bitmap==null)
-                {
-                    bitmap = byteArrayOf()
-                }
-                list.add(Podcast(uri, title,artist,bitmap))
-            }
-        }
-        return list
-    }
+
 
 }
