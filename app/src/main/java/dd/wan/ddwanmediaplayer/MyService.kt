@@ -8,13 +8,17 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.os.Handler
 import android.os.IBinder
+import android.util.Log
 import android.widget.RemoteViews
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dd.wan.ddwanmediaplayer.model.Podcast
 import dd.wan.ddwanmediaplayer.model.ReadPodcast
+import java.util.concurrent.TimeUnit
 
 class MyService : Service() {
     var mediaPlayer = MediaPlayer()
@@ -25,6 +29,8 @@ class MyService : Service() {
     var action = 0
     var shuffle = false
     var isStop = false
+    var timer = 0
+    var checkTimer = false
     val handle = Handler()
     var run = object : Runnable {
         override fun run() {
@@ -61,6 +67,28 @@ class MyService : Service() {
             handle.postDelayed(this, 500)
         }
     }
+    var duration = 0L
+
+    val handleTime = Handler()
+
+    val runTime = Runnable {
+        duration = TimeUnit.MINUTES.toMillis(timer.toLong())
+        val countDown = object : CountDownTimer(duration,1000){
+            override fun onTick(p0: Long) {
+                Log.d("aaaaaaaaaa",p0.toString())
+                if(!checkTimer)
+                    cancel()
+            }
+            override fun onFinish() {
+                timer = 0
+                checkTimer = false
+                handle.removeCallbacks(run)
+                mediaPlayer.pause()
+                playOrPause(false)
+                createNotification()
+            }
+        }.start()
+    }
 
     override fun onBind(p0: Intent?): IBinder? {
         return null
@@ -71,6 +99,10 @@ class MyService : Service() {
         val bundle = intent!!.extras
         action = bundle!!.getInt("action")
         val uri = bundle.getString("Uri")
+        currentTime = bundle.getInt("currentTime")
+        timer = bundle.getInt("timer")
+        checkTimer = bundle.getBoolean("checkTimer")
+
         for (i in list.indices) {
             if (list[i].uri == uri)
                 position = i
@@ -78,7 +110,6 @@ class MyService : Service() {
         val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
         type = sharedPreferences.getInt("type", 0)
         shuffle = sharedPreferences.getBoolean("shuffle", false)
-        currentTime = bundle.getInt("currentTime")
 
         when (action) {
             0 -> {
@@ -96,6 +127,13 @@ class MyService : Service() {
             4 -> {
                 handle.removeCallbacks(run)
                 stopSelf()
+            }
+            5->{
+                if(checkTimer){
+                    handleTime.postDelayed(runTime,100)
+                }else{
+                    handleTime.removeCallbacks(runTime)
+                }
             }
         }
 
@@ -161,6 +199,7 @@ class MyService : Service() {
         val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
         bundle.putInt("action", action)
+        bundle.putInt("timer", timer)
         bundle.putInt("currentTime", mediaPlayer.currentPosition)
         intent.putExtras(bundle)
         val pendingIntent =

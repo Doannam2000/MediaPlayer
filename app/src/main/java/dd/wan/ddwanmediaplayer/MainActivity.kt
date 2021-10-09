@@ -23,6 +23,7 @@ import dd.wan.ddwanmediaplayer.adapter.RecyclerAdapter
 import dd.wan.ddwanmediaplayer.model.Podcast
 import dd.wan.ddwanmediaplayer.model.ReadPodcast
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.activity_play.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -32,7 +33,8 @@ class MainActivity : AppCompatActivity() {
     var check = true
     var listP = ArrayList<Podcast>()
     lateinit var adapter:RecyclerAdapter
-
+    var timer = 0
+    var checkTimer = false
 
     val handle = Handler()
     val run = Runnable {
@@ -101,6 +103,9 @@ class MainActivity : AppCompatActivity() {
                 imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
             }
             check = bundle.getBoolean("checked")
+            checkTimer = bundle.getBoolean("checkTimer")
+            timer = bundle.getInt("timer")
+
             if (check)
                 btnPlayN.setImageResource(R.drawable.ic_baseline_pause_24)
             else
@@ -115,6 +120,12 @@ class MainActivity : AppCompatActivity() {
             bundle1.putString("Uri", podcast.uri)
             bundle1.putInt("currentTime", 0)
             bundle1.putInt("action", 0)
+            bundle1.putInt("timer", timer)
+            var checkTimer = false
+            if(timer!=0)
+                checkTimer = true
+            bundle1.putBoolean("checkTimer", checkTimer)
+
             val intent11 = Intent(this, MyService::class.java)
             intent11.putExtras(bundle1)
             startService(intent11)

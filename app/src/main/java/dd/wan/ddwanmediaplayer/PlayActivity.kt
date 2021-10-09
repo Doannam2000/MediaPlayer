@@ -1,6 +1,7 @@
 package dd.wan.ddwanmediaplayer
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -12,12 +13,25 @@ import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.PopupMenu
 import android.widget.SeekBar
+import android.widget.TextView
+import android.widget.Toast
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import dd.wan.ddwanmediaplayer.model.Podcast
 import dd.wan.ddwanmediaplayer.model.ReadPodcast
 import kotlinx.android.synthetic.main.activity_play.*
 import java.text.SimpleDateFormat
 import kotlin.collections.ArrayList
+import android.widget.TimePicker
+
+import android.app.TimePickerDialog
+import android.app.TimePickerDialog.OnTimeSetListener
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.view.View
+import kotlinx.android.synthetic.main.custom_editext_dialog.view.*
+import java.util.*
+
 
 class PlayActivity : AppCompatActivity() {
 
@@ -28,6 +42,7 @@ class PlayActivity : AppCompatActivity() {
     private var list = ArrayList<Podcast>()
     var action = 0
     var check = true
+    var timer = 0
 
     @SuppressLint("SimpleDateFormat")
     val sdf = SimpleDateFormat("mm:ss")
@@ -80,10 +95,11 @@ class PlayActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_play)
+
         list = ReadPodcast(this).loadSong()
         val bundle = intent.extras
         currentTime = bundle!!.getInt("currentTime")
-        seekBar.progress = currentTime
+        timer = bundle.getInt("timer")
         val uri = bundle.getString("Uri")
         for (i in 0 until list.size) {
             if (list[i].uri == uri)
@@ -91,6 +107,11 @@ class PlayActivity : AppCompatActivity() {
         }
         if (currentTime == 0)
             imageView.animation = AnimationUtils.loadAnimation(this, R.anim.anim_rotate)
+        if(timer!=0)
+            btnClock.alpha = 1F
+        else
+            btnClock.alpha = 0.5F
+        seekBar.progress = currentTime
 
         val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
         val edit = sharedPreferences.edit()
@@ -109,6 +130,7 @@ class PlayActivity : AppCompatActivity() {
             btnShuffle.alpha = 1F
         else
             btnShuffle.alpha = 0.5F
+
 
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPosition, IntentFilter("Current_Position"))
@@ -145,7 +167,7 @@ class PlayActivity : AppCompatActivity() {
             edit.putInt("type", type)
             edit.putBoolean("shuffle", shuffle)
             edit.apply()
-            connectService(5)
+            connectService(6)
         }
         btnShuffle.setOnClickListener {
             if (shuffle) {
@@ -160,7 +182,7 @@ class PlayActivity : AppCompatActivity() {
             edit.putBoolean("shuffle", shuffle)
             edit.putInt("type", type)
             edit.apply()
-            connectService(5)
+            connectService(6)
         }
 
         btnBackward.setOnClickListener {
@@ -185,6 +207,11 @@ class PlayActivity : AppCompatActivity() {
             bundle1.putInt("action", action)
             bundle1.putInt("currentTime", currentTime)
             bundle1.putBoolean("checked", check)
+            bundle1.putInt("timer", timer)
+            var checkTimer = false
+            if(timer!=0)
+                checkTimer = true
+            bundle1.putBoolean("checkTimer", checkTimer)
             intent.putExtras(bundle1)
             startActivity(intent)
             overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
@@ -204,16 +231,94 @@ class PlayActivity : AppCompatActivity() {
             }
 
         })
+
+        btnClock.setOnClickListener {
+            val bottom = BottomSheetDialog(this, R.style.bottomSheetDialog)
+            bottom.setContentView(R.layout.custom_bottom_sheet)
+            bottom.setCanceledOnTouchOutside(true)
+
+            val time: TextView = bottom.findViewById(R.id.timePicker)!!
+            val minute15: TextView = bottom.findViewById(R.id.minute_15)!!
+            val minute30: TextView = bottom.findViewById(R.id.minute_30)!!
+            val hour: TextView = bottom.findViewById(R.id.hour)!!
+            val cancel: TextView = bottom.findViewById(R.id.cancel)!!
+            val nameTimer: TextView = bottom.findViewById(R.id.nameTimer)!!
+
+            minute15.setOnClickListener {
+                timer = 15
+                btnClock.alpha = 1F
+                connectService(5)
+                bottom.dismiss()
+            }
+            minute30.setOnClickListener {
+                timer = 30
+                btnClock.alpha = 1F
+                connectService(5)
+                bottom.dismiss()
+            }
+            hour.setOnClickListener {
+                timer = 60
+                btnClock.alpha = 1F
+                connectService(5)
+                bottom.dismiss()
+            }
+            cancel.setOnClickListener {
+                bottom.dismiss()
+            }
+
+            time.setOnClickListener {
+                if (timer == 0) {
+                    val view = View.inflate(this, R.layout.custom_editext_dialog, null)
+                    var builder = AlertDialog.Builder(this)
+                    builder.setView(view)
+                    val dialog = builder.create()
+                    dialog.show()
+                    dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                    view.cancel.setOnClickListener {
+                        dialog.dismiss()
+                    }
+                    view.oke.setOnClickListener {
+                        dialog.dismiss()
+                        if (view.settingMinute.isChecked) {
+                            timer = view.settingTime.text.toString().toInt()
+                        }
+                        if (view.settingHour.isChecked) {
+                            timer = 60 * view.settingTime.text.toString().toInt()
+                        }
+                        if(timer!=0)
+                            btnClock.alpha = 1F
+                        connectService(5)
+                    }
+                } else {
+                    timer = 0
+                    btnClock.alpha = 0.5F
+                    connectService(5)
+                }
+                bottom.dismiss()
+            }
+            bottom.show()
+            if (timer == 0) {
+                btnClock.alpha = 0.5F
+                nameTimer.text = "Hẹn giờ"
+                time.text="Lựa chọn"
+            } else {
+                time.text = "Hủy hẹn giờ"
+                if (timer > 60) {
+                    nameTimer.text = "${timer / 60} giờ ${timer % 60} phút"
+                } else
+                    nameTimer.text = "Hẹn giờ ( $timer phút )"
+            }
+        }
     }
 
+
+
     fun updateUI() {
-        if (currentTime == 0) {
-            if (list[position].image.isNotEmpty()) {
-                val image = list[position].image
-                imageView.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
-            } else {
-                imageView.setImageResource(R.drawable.music_icon)
-            }
+        if (list[position].image.isNotEmpty()) {
+            val image = list[position].image
+            imageView.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+        } else {
+            imageView.setImageResource(R.drawable.music_icon)
         }
         name1.text = list[position].title
         val string = "${list[position].title} \n\n ${list[position].artist}"
@@ -229,6 +334,11 @@ class PlayActivity : AppCompatActivity() {
         val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
         bundle.putInt("action", ac)
+        bundle.putInt("timer", timer)
+        var checkTimer = false
+        if(timer!=0)
+            checkTimer = true
+        bundle.putBoolean("checkTimer", checkTimer)
         bundle.putInt("currentTime", currentTime)
         intent.putExtras(bundle)
         sendBroadcast(intent)
@@ -236,7 +346,6 @@ class PlayActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-//        connectService(6) tắt handle khi tắt màn
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPosition)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPodcast)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPlay)

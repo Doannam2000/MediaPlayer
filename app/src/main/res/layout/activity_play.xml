@@ -120,7 +120,7 @@
         android:id="@+id/btnRepeat"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:padding="10dp"
+        android:padding="15dp"
         android:src="@drawable/repeat_all"
         app:layout_constraintBottom_toTopOf="@+id/linearLayoutCompat"
         app:layout_constraintEnd_toEndOf="parent"
@@ -129,11 +129,23 @@
         app:layout_constraintTop_toBottomOf="@+id/seekBar" />
 
     <ImageView
+        android:id="@+id/btnClock"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:alpha="0.5"
+        android:padding="15dp"
+        android:src="@drawable/clock"
+        app:layout_constraintBottom_toBottomOf="@+id/btnShuffle"
+        app:layout_constraintEnd_toStartOf="@+id/btnRepeat"
+        app:layout_constraintStart_toEndOf="@+id/btnShuffle"
+        app:layout_constraintTop_toTopOf="@+id/btnShuffle" />
+
+    <ImageView
         android:id="@+id/btnShuffle"
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:alpha="0.5"
-        android:padding="10dp"
+        android:padding="15dp"
         android:src="@drawable/shuffle"
         app:layout_constraintBottom_toTopOf="@+id/linearLayoutCompat"
         app:layout_constraintEnd_toEndOf="parent"
