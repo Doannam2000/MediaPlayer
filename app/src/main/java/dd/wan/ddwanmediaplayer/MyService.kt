@@ -11,11 +11,15 @@ import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Handler
 import android.os.IBinder
-import android.util.Log
 import android.widget.RemoteViews
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_NEXT_SONG
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PAUSE_OR_PLAY
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PLAY_SONG
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PREVIOUS_SONG
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_STOP_SONG
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_TIMER
 import dd.wan.ddwanmediaplayer.model.Podcast
 import dd.wan.ddwanmediaplayer.model.ReadPodcast
 import java.util.concurrent.TimeUnit
@@ -37,13 +41,13 @@ class MyService : Service() {
             mediaPlayer.setOnCompletionListener {
                 currentTime = 0
                 when (type) {
-                    0 -> {
+                    MyApplication.ACTION_REPEAT_ALL -> {
                         nextSong()
                     }
-                    1 -> {
+                    MyApplication.ACTION_REPEAT_THIS_SONG -> {
                         playSong()
                     }
-                    2 -> {
+                    MyApplication.ACTION_NOT_REPEAT -> {
                         position++
                         if (position == list.size) {
                             position = 0
@@ -79,6 +83,7 @@ class MyService : Service() {
             }
             override fun onFinish() {
                 timer = 0
+                currentTime = 0
                 checkTimer = false
                 handle.removeCallbacks(run)
                 mediaPlayer.pause()
@@ -93,8 +98,12 @@ class MyService : Service() {
         return null
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onCreate() {
+        super.onCreate()
         list = ReadPodcast(this).loadSong()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val bundle = intent!!.extras
         action = bundle!!.getInt("action")
         val uri = bundle.getString("Uri")
@@ -111,23 +120,23 @@ class MyService : Service() {
         shuffle = sharedPreferences.getBoolean("shuffle", false)
 
         when (action) {
-            0 -> {
+            ACTION_PLAY_SONG -> {
                 play()
             }
-            1 -> {
+            ACTION_PREVIOUS_SONG -> {
                 previous()
             }
-            2 -> {
+            ACTION_PAUSE_OR_PLAY-> {
                 playOr()
             }
-            3 -> {
+            ACTION_NEXT_SONG -> {
                 nextSong()
             }
-            4 -> {
+            ACTION_STOP_SONG -> {
                 handle.removeCallbacks(run)
                 stopSelf()
             }
-            5->{
+            ACTION_TIMER->{
                 if(checkTimer){
                     if(this::countDown.isInitialized)
                         countDown.cancel()
@@ -224,10 +233,10 @@ class MyService : Service() {
         } else {
             remoteView.setImageViewResource(R.id.btnPlayN, R.drawable.ic_outline_play_arrow_24)
         }
-        remoteView.setOnClickPendingIntent(R.id.btnNextN, sendAction(3))
-        remoteView.setOnClickPendingIntent(R.id.btnPrevious, sendAction(1))
-        remoteView.setOnClickPendingIntent(R.id.btnPlayN, sendAction(2))
-        remoteView.setOnClickPendingIntent(R.id.btnExit, sendAction(4))
+        remoteView.setOnClickPendingIntent(R.id.btnNextN, sendAction(ACTION_NEXT_SONG))
+        remoteView.setOnClickPendingIntent(R.id.btnPrevious, sendAction(ACTION_PREVIOUS_SONG))
+        remoteView.setOnClickPendingIntent(R.id.btnPlayN, sendAction(ACTION_PAUSE_OR_PLAY))
+        remoteView.setOnClickPendingIntent(R.id.btnExit, sendAction(ACTION_STOP_SONG))
 
         if (podcast.image.isNotEmpty())
             remoteView.setImageViewBitmap(

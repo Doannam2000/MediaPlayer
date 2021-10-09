@@ -29,6 +29,15 @@ import android.app.TimePickerDialog.OnTimeSetListener
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.View
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_CHANGE
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_NEXT_SONG
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_NOT_REPEAT
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PAUSE_OR_PLAY
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PLAY_SONG
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PREVIOUS_SONG
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_ALL
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_THIS_SONG
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_TIMER
 import kotlinx.android.synthetic.main.custom_editext_dialog.view.*
 import java.util.*
 
@@ -118,11 +127,11 @@ class PlayActivity : AppCompatActivity() {
         type = sharedPreferences.getInt("type", 0)
         shuffle = sharedPreferences.getBoolean("shuffle", false)
         when (type) {
-            0 -> btnRepeat.setImageResource(R.drawable.repeat_all)
-            1 -> {
+            ACTION_REPEAT_ALL -> btnRepeat.setImageResource(R.drawable.repeat_all)
+            ACTION_REPEAT_THIS_SONG -> {
                 btnRepeat.setImageResource(R.drawable.repeat1)
             }
-            2 -> {
+            ACTION_NOT_REPEAT -> {
                 btnRepeat.setImageResource(R.drawable.repeat)
             }
         }
@@ -140,11 +149,11 @@ class PlayActivity : AppCompatActivity() {
             .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
         updateUI()
 
-        btnPlay.setOnClickListener { connectService(2) }
+        btnPlay.setOnClickListener { connectService(ACTION_PAUSE_OR_PLAY) }
 
-        btnBack.setOnClickListener { connectService(1) }
+        btnBack.setOnClickListener { connectService(ACTION_PREVIOUS_SONG) }
 
-        btnNext.setOnClickListener { connectService(3) }
+        btnNext.setOnClickListener { connectService(ACTION_NEXT_SONG) }
 
         btnRepeat.setOnClickListener {
             if (type == 2)
@@ -152,13 +161,13 @@ class PlayActivity : AppCompatActivity() {
             else
                 type++
             when (type) {
-                0 -> btnRepeat.setImageResource(R.drawable.repeat_all)
-                1 -> {
+                ACTION_REPEAT_ALL -> btnRepeat.setImageResource(R.drawable.repeat_all)
+                ACTION_REPEAT_THIS_SONG -> {
                     btnRepeat.setImageResource(R.drawable.repeat1)
                     shuffle = false
                     btnShuffle.alpha = 0.5F
                 }
-                2 -> {
+                ACTION_NOT_REPEAT -> {
                     btnRepeat.setImageResource(R.drawable.repeat)
                     shuffle = false
                     btnShuffle.alpha = 0.5F
@@ -166,8 +175,8 @@ class PlayActivity : AppCompatActivity() {
             }
             edit.putInt("type", type)
             edit.putBoolean("shuffle", shuffle)
-            edit.apply()
-            connectService(6)
+            edit.commit()
+            connectService(ACTION_CHANGE)
         }
         btnShuffle.setOnClickListener {
             if (shuffle) {
@@ -181,22 +190,22 @@ class PlayActivity : AppCompatActivity() {
             }
             edit.putBoolean("shuffle", shuffle)
             edit.putInt("type", type)
-            edit.apply()
-            connectService(6)
+            edit.commit()
+            connectService(ACTION_CHANGE)
         }
 
         btnBackward.setOnClickListener {
             if (currentTime > 15000) {
                 seekBar.progress = currentTime - 10000
                 currentTime -= 10000
-                connectService(0)
+                connectService(ACTION_PLAY_SONG)
             }
         }
         btnForward.setOnClickListener {
             if (currentTime + 10000 < list[position].duration) {
                 seekBar.progress = currentTime + 10000
                 currentTime += 10000
-                connectService(0)
+                connectService(ACTION_PLAY_SONG)
             }
         }
         previous.setOnClickListener {
@@ -226,7 +235,7 @@ class PlayActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(p0: SeekBar?) {
                 p0?.progress?.let {
                     currentTime = it
-                    connectService(0)
+                    connectService(ACTION_PLAY_SONG)
                 }
             }
 
@@ -247,19 +256,19 @@ class PlayActivity : AppCompatActivity() {
             minute15.setOnClickListener {
                 timer = 15
                 btnClock.alpha = 1F
-                connectService(5)
+                connectService(ACTION_TIMER)
                 bottom.dismiss()
             }
             minute30.setOnClickListener {
                 timer = 30
                 btnClock.alpha = 1F
-                connectService(5)
+                connectService(ACTION_TIMER)
                 bottom.dismiss()
             }
             hour.setOnClickListener {
                 timer = 60
                 btnClock.alpha = 1F
-                connectService(5)
+                connectService(ACTION_TIMER)
                 bottom.dismiss()
             }
             cancel.setOnClickListener {
@@ -287,12 +296,12 @@ class PlayActivity : AppCompatActivity() {
                         }
                         if(timer!=0)
                             btnClock.alpha = 1F
-                        connectService(5)
+                        connectService(ACTION_TIMER)
                     }
                 } else {
                     timer = 0
                     btnClock.alpha = 0.5F
-                    connectService(5)
+                    connectService(ACTION_TIMER)
                 }
                 bottom.dismiss()
             }

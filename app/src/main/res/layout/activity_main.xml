@@ -41,7 +41,7 @@
                     android:id="@+id/textView2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="What you want to hear today"
+                    android:text="Which song do you want to hear today ?"
                     android:textColor="@color/white"
                     app:layout_constraintStart_toStartOf="@+id/textView"
                     app:layout_constraintTop_toBottomOf="@+id/textView" />
@@ -66,16 +66,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginTop="20dp" />
-            <TextView
-                android:id="@+id/noData"
-                android:visibility="gone"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="KHÔNG CÓ DỮ LIỆU"
-                android:gravity="center"
-                android:layout_marginVertical="30dp"
-                android:textColor="@color/white"
-                android:textSize="20sp"/>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
