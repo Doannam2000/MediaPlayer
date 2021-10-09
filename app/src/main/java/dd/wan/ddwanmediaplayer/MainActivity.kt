@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
     var currentTime = 0
     var check = true
     var listP = ArrayList<Podcast>()
-    lateinit var adapter:RecyclerAdapter
+    lateinit var adapter: RecyclerAdapter
     var timer = 0
     var checkTimer = false
 
@@ -84,57 +84,88 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         requestPermission()
-        list = ReadPodcast(this).loadSong()
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        )
+        {
+            Toast.makeText(this,"Không có quyền truy cập bộ nhớ",Toast.LENGTH_SHORT).show()
+        }
+        else
+            list = ReadPodcast(this).loadSong()
         val searchView: TextView = findViewById(R.id.searchView)
         val recyclerView: RecyclerView = findViewById(R.id.list_Podcast)
+        if(list.size==0) {
+            noData.visibility = View.VISIBLE
+        } else{
+            val bundle = intent.extras
+            if (bundle != null) {
+                layoutPodcast.visibility = View.VISIBLE
+                val uri = bundle.getString("Uri")
+                for (i in list.indices) {
+                    if (list[i].uri == uri)
+                        position = i
+                }
+                nameSong.text = list[position].title
+                nameAuth.text = list[position].artist
+                if (list[position].image.isNotEmpty()) {
+                    val image = list[position].image
+                    imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+                }
+                check = bundle.getBoolean("checked")
+                checkTimer = bundle.getBoolean("checkTimer")
+                timer = bundle.getInt("timer")
 
-        val bundle = intent.extras
-        if (bundle != null) {
-            layoutPodcast.visibility = View.VISIBLE
-            val uri = bundle.getString("Uri")
-            for (i in list.indices) {
-                if (list[i].uri == uri)
-                    position = i
+                if (check)
+                    btnPlayN.setImageResource(R.drawable.ic_baseline_pause_24)
+                else
+                    btnPlayN.setImageResource(R.drawable.ic_outline_play_arrow_24)
             }
-            nameSong.text = list[position].title
-            nameAuth.text = list[position].artist
-            if (list[position].image.isNotEmpty()) {
-                val image = list[position].image
-                imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+            recyclerView.layoutManager = LinearLayoutManager(this)
+            recyclerView.setHasFixedSize(true)
+            adapter = RecyclerAdapter(list)
+            adapter.setCallback {
+                val podcast = list[it]
+                val bundle1 = Bundle()
+                bundle1.putString("Uri", podcast.uri)
+                bundle1.putInt("currentTime", 0)
+                bundle1.putInt("action", 0)
+                bundle1.putInt("timer", timer)
+                var checkTimer = false
+                if (timer != 0)
+                    checkTimer = true
+                bundle1.putBoolean("checkTimer", checkTimer)
+
+                val intent11 = Intent(this, MyService::class.java)
+                intent11.putExtras(bundle1)
+                startService(intent11)
+
+                val intent = Intent(this, PlayActivity::class.java)
+                intent.putExtras(bundle1)
+                startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK))
             }
-            check = bundle.getBoolean("checked")
-            checkTimer = bundle.getBoolean("checkTimer")
-            timer = bundle.getInt("timer")
+            recyclerView.adapter = adapter
+            noData.visibility = View.GONE
 
-            if (check)
-                btnPlayN.setImageResource(R.drawable.ic_baseline_pause_24)
-            else
-                btnPlayN.setImageResource(R.drawable.ic_outline_play_arrow_24)
+            listP.addAll(list)
+
+            searchView.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                }
+
+                override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                }
+
+                override fun afterTextChanged(p0: Editable?) {
+                    handle.removeCallbacks(run)
+                    handle.postDelayed(run, 500)
+                }
+            })
         }
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.setHasFixedSize(true)
-        adapter = RecyclerAdapter(list)
-        adapter.setCallback {
-            val podcast = list[it]
-            val bundle1 = Bundle()
-            bundle1.putString("Uri", podcast.uri)
-            bundle1.putInt("currentTime", 0)
-            bundle1.putInt("action", 0)
-            bundle1.putInt("timer", timer)
-            var checkTimer = false
-            if(timer!=0)
-                checkTimer = true
-            bundle1.putBoolean("checkTimer", checkTimer)
+        // lấy dữ liệu từ playActivity
 
-            val intent11 = Intent(this, MyService::class.java)
-            intent11.putExtras(bundle1)
-            startService(intent11)
 
-            val intent = Intent(this, PlayActivity::class.java)
-            intent.putExtras(bundle1)
-            startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK))
-        }
-        recyclerView.adapter = adapter
 
         btnExit.setOnClickListener {
             connectService(4)
@@ -145,20 +176,7 @@ class MainActivity : AppCompatActivity() {
         btnPlayN.setOnClickListener { connectService(2) }
         layoutPodcast.setOnClickListener { finish() }
 
-        listP.addAll(list)
 
-        searchView.addTextChangedListener( object:TextWatcher{
-            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-            }
-
-            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-            }
-
-            override fun afterTextChanged(p0: Editable?) {
-                handle.removeCallbacks(run)
-                handle.postDelayed(run,500)
-            }
-        })
 
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))

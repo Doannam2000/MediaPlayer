@@ -76,7 +76,6 @@ class MyService : Service() {
         var duration = TimeUnit.MINUTES.toMillis(timer.toLong())
         countDown = object : CountDownTimer(duration,1000){
             override fun onTick(p0: Long) {
-                Log.d("aaaaaaaaaa",p0.toString())
             }
             override fun onFinish() {
                 timer = 0
