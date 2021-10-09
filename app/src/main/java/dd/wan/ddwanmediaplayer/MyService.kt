@@ -67,17 +67,16 @@ class MyService : Service() {
             handle.postDelayed(this, 500)
         }
     }
-    var duration = 0L
+    lateinit var countDown:CountDownTimer
 
     val handleTime = Handler()
 
+
     val runTime = Runnable {
-        duration = TimeUnit.MINUTES.toMillis(timer.toLong())
-        val countDown = object : CountDownTimer(duration,1000){
+        var duration = TimeUnit.MINUTES.toMillis(timer.toLong())
+        countDown = object : CountDownTimer(duration,1000){
             override fun onTick(p0: Long) {
                 Log.d("aaaaaaaaaa",p0.toString())
-                if(!checkTimer)
-                    cancel()
             }
             override fun onFinish() {
                 timer = 0
@@ -87,7 +86,8 @@ class MyService : Service() {
                 playOrPause(false)
                 createNotification()
             }
-        }.start()
+        }
+        countDown.start()
     }
 
     override fun onBind(p0: Intent?): IBinder? {
@@ -130,10 +130,15 @@ class MyService : Service() {
             }
             5->{
                 if(checkTimer){
+                    if(this::countDown.isInitialized)
+                        countDown.cancel()
                     handleTime.postDelayed(runTime,100)
                 }else{
+                    if(this::countDown.isInitialized)
+                        countDown.cancel()
                     handleTime.removeCallbacks(runTime)
                 }
+                createNotification()
             }
         }
 
