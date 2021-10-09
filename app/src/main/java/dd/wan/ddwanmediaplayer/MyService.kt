@@ -3,6 +3,7 @@ package dd.wan.ddwanmediaplayer
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.media.MediaPlayer
@@ -22,7 +23,8 @@ class MyService : Service() {
     var position = 0
     var currentTime = 0
     var action = 0
-    var check = true
+    var shuffle = false
+    var isStop = false
     val handle = Handler()
     var run = object : Runnable {
         override fun run() {
@@ -30,31 +32,29 @@ class MyService : Service() {
                 currentTime = 0
                 when (type) {
                     0 -> {
-                        position++
-                        if (position == list.size) {
-                            position = 0
-                        }
-                        playSong()
-                        sendDataToActivity()
+                        nextSong()
                     }
                     1 -> {
                         playSong()
                     }
                     2 -> {
-                        list.shuffle()
-                        playSong()
-                        sendDataToActivity()
-                    }
-                    3 -> {
                         position++
-                        if (position == list.size)
+                        if (position == list.size) {
+                            position = 0
+                            mediaPlayer.seekTo(0)
+                            isStop = true
                             mediaPlayer.stop()
-                        else {
+                            createNotification()
+                            sendDataToActivity()
+                            sendCurrentPosition()
+                            playOrPause(false)
+                            handle.removeCallbacks(this)
+                        } else {
                             playSong()
+                            createNotification()
                             sendDataToActivity()
                         }
                     }
-
                 }
             }
             sendCurrentPosition()
@@ -75,65 +75,83 @@ class MyService : Service() {
             if (list[i].uri == uri)
                 position = i
         }
-        type = bundle.getInt("type")
+        val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
+        type = sharedPreferences.getInt("type", 0)
+        shuffle = sharedPreferences.getBoolean("shuffle", false)
         currentTime = bundle.getInt("currentTime")
 
         when (action) {
             0 -> {
-                playSong()
-                updateTime()
-                createNotification()
-                check = true
-                playOrPause()
+                play()
             }
             1 -> {
-                if (type == 2) {
-                    list.shuffle()
-                } else {
-                    position--
-                    if (position < 0) {
-                        position = list.size - 1
-                    }
-                }
-                currentTime = 0
-                playSong()
-                updateTime()
-                createNotification()
-                sendDataToActivity()
+                previous()
             }
             2 -> {
-                if (mediaPlayer.isPlaying) {
-                    mediaPlayer.pause()
-                    check = false
-                    playOrPause()
-                } else {
-                    mediaPlayer.start()
-                    check = true
-                    playOrPause()
-                }
-                createNotification()
+                playOr()
             }
             3 -> {
-                if (type == 2) {
-                    list.shuffle()
-                } else {
-                    position++
-                    if (position == list.size) {
-                        position = 0
-                    }
-                }
-                currentTime = 0
-                playSong()
-                updateTime()
-                createNotification()
-                sendDataToActivity()
+                nextSong()
             }
             4 -> {
+                handle.removeCallbacks(run)
                 stopSelf()
             }
         }
 
         return START_NOT_STICKY
+    }
+
+    fun play() {
+        playSong()
+        createNotification()
+        playOrPause(true)
+    }
+
+    fun previous() {
+        if (shuffle) {
+            list.shuffle()
+        } else {
+            position--
+            if (position < 0) {
+                position = list.size - 1
+            }
+        }
+        currentTime = 0
+        playSong()
+        createNotification()
+        sendDataToActivity()
+    }
+
+    fun playOr() {
+        if (mediaPlayer.isPlaying) {
+            mediaPlayer.pause()
+            playOrPause(false)
+            handle.removeCallbacks(run)
+        } else {
+            if (isStop)
+                playSong()
+            else
+                mediaPlayer.start()
+            handle.postDelayed(run, 100)
+            playOrPause(true)
+        }
+        createNotification()
+    }
+
+    fun nextSong() {
+        if (shuffle) {
+            list.shuffle()
+        } else {
+            position++
+            if (position == list.size) {
+                position = 0
+            }
+        }
+        currentTime = 0
+        playSong()
+        createNotification()
+        sendDataToActivity()
     }
 
 
@@ -142,7 +160,6 @@ class MyService : Service() {
         val intent = Intent(this, PlayActivity::class.java)
         val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
-        bundle.putInt("type", type)
         bundle.putInt("action", action)
         bundle.putInt("currentTime", mediaPlayer.currentPosition)
         intent.putExtras(bundle)
@@ -205,6 +222,8 @@ class MyService : Service() {
     }
 
     fun playSong() {
+        handle.removeCallbacks(run)
+        handle.postDelayed(run, 100)
         if (mediaPlayer.isPlaying) {
             mediaPlayer.release()
         }
@@ -215,10 +234,6 @@ class MyService : Service() {
         mediaPlayer.start()
     }
 
-    private fun updateTime() {
-        handle.removeCallbacks(run)
-        handle.postDelayed(run, 100)
-    }
 
     fun sendCurrentPosition() {
         val intent = Intent("Current_Position")
@@ -232,18 +247,15 @@ class MyService : Service() {
         val intent = Intent("Current_Song")
         val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
-        bundle.putInt("type", type)
         bundle.putInt("action", action)
-        bundle.putInt("currentTime",currentTime)
+        bundle.putInt("currentTime", currentTime)
         intent.putExtras(bundle)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
-        check = true
-        playOrPause()
+        playOrPause(true)
     }
 
-    fun playOrPause()
-    {
-        var intent = Intent("Pause_Play")
+    fun playOrPause(check: Boolean) {
+        val intent = Intent("Pause_Play")
         val bundle = Bundle()
         bundle.putBoolean("checked", check)
         intent.putExtras(bundle)

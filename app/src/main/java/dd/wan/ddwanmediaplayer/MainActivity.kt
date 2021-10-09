@@ -1,7 +1,6 @@
 package dd.wan.ddwanmediaplayer
 
 import android.Manifest
-import android.app.ActivityOptions
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.pm.PackageManager
@@ -17,7 +16,6 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.widget.TextView
-import androidx.appcompat.widget.SearchView
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -29,25 +27,23 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
     var position = 0
-    var type = 0
     var list = ArrayList<Podcast>()
     var currentTime = 0
     var check = true
     var listP = ArrayList<Podcast>()
     lateinit var adapter:RecyclerAdapter
 
+
     val handle = Handler()
-    val run = object :Runnable{
-        override fun run() {
-            var text = searchView.text
-            list.clear()
-            for (item in listP) {
-                if (item.title.uppercase().contains(text.toString().uppercase())) {
-                    list.add(item)
-                }
+    val run = Runnable {
+        val text = searchView.text
+        list.clear()
+        for (item in listP) {
+            if (item.title.uppercase().contains(text.toString().uppercase())) {
+                list.add(item)
             }
-            adapter.notifyDataSetChanged()
         }
+        adapter.notifyDataSetChanged()
     }
 
     private val broadcastPlay = object : BroadcastReceiver() {
@@ -67,7 +63,6 @@ class MainActivity : AppCompatActivity() {
                 return
             else {
                 currentTime = bundle.getInt("currentTime")
-                type = bundle.getInt("type")
                 val uri = bundle.getString("Uri") as String
                 for (i in 0 until list.size) {
                     if (list[i].uri == uri)
@@ -88,7 +83,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         requestPermission()
         list = ReadPodcast(this).loadSong()
-        var searchView: TextView = findViewById(R.id.searchView)
+        val searchView: TextView = findViewById(R.id.searchView)
         val recyclerView: RecyclerView = findViewById(R.id.list_Podcast)
 
         val bundle = intent.extras
@@ -111,7 +106,6 @@ class MainActivity : AppCompatActivity() {
             else
                 btnPlayN.setImageResource(R.drawable.ic_outline_play_arrow_24)
         }
-
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.setHasFixedSize(true)
         adapter = RecyclerAdapter(list)
@@ -119,7 +113,6 @@ class MainActivity : AppCompatActivity() {
             val podcast = list[it]
             val bundle1 = Bundle()
             bundle1.putString("Uri", podcast.uri)
-            bundle1.putInt("type", type)
             bundle1.putInt("currentTime", 0)
             bundle1.putInt("action", 0)
             val intent11 = Intent(this, MyService::class.java)
@@ -139,13 +132,9 @@ class MainActivity : AppCompatActivity() {
         btnNextN.setOnClickListener { connectService(3) }
         btnPrevious.setOnClickListener { connectService(1) }
         btnPlayN.setOnClickListener { connectService(2) }
-        layoutPodcast.setOnClickListener {
-            finish()
-        }
-
+        layoutPodcast.setOnClickListener { finish() }
 
         listP.addAll(list)
-
 
         searchView.addTextChangedListener( object:TextWatcher{
             override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
@@ -159,7 +148,6 @@ class MainActivity : AppCompatActivity() {
                 handle.postDelayed(run,500)
             }
         })
-
 
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
@@ -210,7 +198,6 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(this, Broadcast::class.java)
         val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
-        bundle.putInt("type", type)
         bundle.putInt("action", ac)
         bundle.putInt("currentTime", currentTime)
         intent.putExtras(bundle)
@@ -224,6 +211,5 @@ class MainActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this)
             .unregisterReceiver(broadcastPlay)
     }
-
 
 }

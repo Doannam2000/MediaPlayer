@@ -31,7 +31,6 @@ class ReadPodcast(var context: Context) {
                 var media = MediaMetadataRetriever()
                 media.setDataSource(uri)
                 var duration = media.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION) as String
-
                 var bitmap: ByteArray? = media.embeddedPicture
                 if (bitmap == null) {
                     bitmap = byteArrayOf()

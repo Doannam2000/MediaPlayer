@@ -22,6 +22,7 @@ import kotlin.collections.ArrayList
 class PlayActivity : AppCompatActivity() {
 
     private var type = 0
+    var shuffle = false
     private var position = 0
     private var currentTime = 0
     private var list = ArrayList<Podcast>()
@@ -52,6 +53,7 @@ class PlayActivity : AppCompatActivity() {
                 return
             else {
                 currentTime = bundle.getInt("currentTime")
+                seekBar.progress = currentTime
                 type = bundle.getInt("type")
                 action = bundle.getInt("action")
                 val uri = bundle.getString("Uri") as String
@@ -60,7 +62,6 @@ class PlayActivity : AppCompatActivity() {
                         position = i
                 }
                 updateUI()
-                seekBar.progress = currentTime
                 time1.text = sdf.format(currentTime)
             }
         }
@@ -82,12 +83,33 @@ class PlayActivity : AppCompatActivity() {
         list = ReadPodcast(this).loadSong()
         val bundle = intent.extras
         currentTime = bundle!!.getInt("currentTime")
+        seekBar.progress = currentTime
         val uri = bundle.getString("Uri")
         for (i in 0 until list.size) {
             if (list[i].uri == uri)
                 position = i
         }
-        imageView.animation = AnimationUtils.loadAnimation(this,R.anim.anim_rotate)
+        if (currentTime == 0)
+            imageView.animation = AnimationUtils.loadAnimation(this, R.anim.anim_rotate)
+
+        val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
+        val edit = sharedPreferences.edit()
+        type = sharedPreferences.getInt("type", 0)
+        shuffle = sharedPreferences.getBoolean("shuffle", false)
+        when (type) {
+            0 -> btnRepeat.setImageResource(R.drawable.repeat_all)
+            1 -> {
+                btnRepeat.setImageResource(R.drawable.repeat1)
+            }
+            2 -> {
+                btnRepeat.setImageResource(R.drawable.repeat)
+            }
+        }
+        if (shuffle)
+            btnShuffle.alpha = 1F
+        else
+            btnShuffle.alpha = 0.5F
+
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPosition, IntentFilter("Current_Position"))
         LocalBroadcastManager.getInstance(this)
@@ -95,16 +117,50 @@ class PlayActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
         updateUI()
-        btnPlay.setOnClickListener {
-            connectService(2)
-        }
 
-        btnBack.setOnClickListener {
-            connectService(1)
-        }
+        btnPlay.setOnClickListener { connectService(2) }
 
-        btnNext.setOnClickListener {
-            connectService(3)
+        btnBack.setOnClickListener { connectService(1) }
+
+        btnNext.setOnClickListener { connectService(3) }
+
+        btnRepeat.setOnClickListener {
+            if (type == 2)
+                type = 0
+            else
+                type++
+            when (type) {
+                0 -> btnRepeat.setImageResource(R.drawable.repeat_all)
+                1 -> {
+                    btnRepeat.setImageResource(R.drawable.repeat1)
+                    shuffle = false
+                    btnShuffle.alpha = 0.5F
+                }
+                2 -> {
+                    btnRepeat.setImageResource(R.drawable.repeat)
+                    shuffle = false
+                    btnShuffle.alpha = 0.5F
+                }
+            }
+            edit.putInt("type", type)
+            edit.putBoolean("shuffle", shuffle)
+            edit.apply()
+            connectService(5)
+        }
+        btnShuffle.setOnClickListener {
+            if (shuffle) {
+                shuffle = false
+                btnShuffle.alpha = 0.5F
+            } else {
+                shuffle = true
+                btnShuffle.alpha = 1F
+                btnRepeat.setImageResource(R.drawable.repeat_all)
+                type = 0
+            }
+            edit.putBoolean("shuffle", shuffle)
+            edit.putInt("type", type)
+            edit.apply()
+            connectService(5)
         }
 
         btnBackward.setOnClickListener {
@@ -121,21 +177,6 @@ class PlayActivity : AppCompatActivity() {
                 connectService(0)
             }
         }
-        setting.setOnClickListener { it ->
-            val pop = PopupMenu(this, it)
-            pop.menuInflater.inflate(R.menu.menu, pop.menu)
-            pop.show()
-            pop.setOnMenuItemClickListener {
-                when (it.itemId) {
-                    R.id.repeatAll -> type = 0
-                    R.id.repeat -> type = 1
-                    R.id.shuffle -> type = 2
-                    R.id.noRepeat -> type = 3
-                }
-                connectService(5)
-                false
-            }
-        }
         previous.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java)
             val bundle1 = Bundle()
@@ -143,10 +184,10 @@ class PlayActivity : AppCompatActivity() {
             bundle1.putInt("type", type)
             bundle1.putInt("action", action)
             bundle1.putInt("currentTime", currentTime)
-            bundle1.putBoolean("checked",check)
+            bundle1.putBoolean("checked", check)
             intent.putExtras(bundle1)
             startActivity(intent)
-            overridePendingTransition(R.anim.left_to_right,R.anim.left_to_right_out)
+            overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
         }
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
@@ -166,11 +207,13 @@ class PlayActivity : AppCompatActivity() {
     }
 
     fun updateUI() {
-        if (list[position].image.isNotEmpty()) {
-            val image = list[position].image
-            imageView.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
-        } else {
-            imageView.setImageResource(R.drawable.music_icon)
+        if (currentTime == 0) {
+            if (list[position].image.isNotEmpty()) {
+                val image = list[position].image
+                imageView.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+            } else {
+                imageView.setImageResource(R.drawable.music_icon)
+            }
         }
         name1.text = list[position].title
         val string = "${list[position].title} \n\n ${list[position].artist}"
@@ -185,16 +228,15 @@ class PlayActivity : AppCompatActivity() {
         val intent = Intent(this, Broadcast::class.java)
         val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
-        bundle.putInt("type", type)
         bundle.putInt("action", ac)
         bundle.putInt("currentTime", currentTime)
         intent.putExtras(bundle)
         sendBroadcast(intent)
     }
 
-
     override fun onDestroy() {
         super.onDestroy()
+//        connectService(6) tắt handle khi tắt màn
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPosition)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPodcast)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPlay)
