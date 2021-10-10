@@ -35,7 +35,6 @@ class MainActivity : AppCompatActivity() {
     lateinit var adapter: RecyclerAdapter
     var timer = 0
     var checkTimer = false
-
     val handle = Handler()
     val run = Runnable {
         val text = searchView.text
@@ -47,6 +46,7 @@ class MainActivity : AppCompatActivity() {
         }
         adapter.notifyDataSetChanged()
     }
+    var activity = false
 
     private val broadcastPlay = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
@@ -89,17 +89,16 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.READ_EXTERNAL_STORAGE
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Toast.makeText(this,"Không có quyền truy cập bộ nhớ",Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Không có quyền truy cập bộ nhớ", Toast.LENGTH_SHORT).show()
         } else
             list = ReadPodcast(this).loadSong()
         val searchView: TextView = findViewById(R.id.searchView)
         val recyclerView: RecyclerView = findViewById(R.id.list_Podcast)
-        if(list.size!=0) {
+        if (list.size != 0) {
             val bundle = intent.extras
             if (bundle != null) {
                 val uri = bundle.getString("Uri")
-                if(uri!=null)
-                {
+                if (uri != null) {
                     layoutPodcast.visibility = View.VISIBLE
                     for (i in list.indices) {
                         if (list[i].uri == uri)
@@ -114,7 +113,7 @@ class MainActivity : AppCompatActivity() {
                     check = bundle.getBoolean("checked")
                     checkTimer = bundle.getBoolean("checkTimer")
                     timer = bundle.getInt("timer")
-
+                    activity = bundle.getBoolean("activity")
                     if (check)
                         btnPlayN.setImageResource(R.drawable.ic_baseline_pause_24)
                     else
@@ -128,13 +127,23 @@ class MainActivity : AppCompatActivity() {
         recyclerView.setHasFixedSize(true)
         adapter = RecyclerAdapter(list)
         adapter.setCallback {
+            layoutPodcast.visibility = View.VISIBLE
             val podcast = list[it]
             val bundle1 = Bundle()
             bundle1.putString("Uri", podcast.uri)
             bundle1.putInt("currentTime", 0)
             bundle1.putInt("action", 0)
+            bundle1.putBoolean("activity", true)
             bundle1.putInt("timer", timer)
             var checkTimer = false
+
+            nameSong.text = podcast.title
+            nameAuth.text = podcast.artist
+            if (podcast.image.isNotEmpty()) {
+                val image = podcast.image
+                imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+            }
+
             if (timer != 0)
                 checkTimer = true
             bundle1.putBoolean("checkTimer", checkTimer)
@@ -145,10 +154,10 @@ class MainActivity : AppCompatActivity() {
 
             val intent = Intent(this, PlayActivity::class.java)
             intent.putExtras(bundle1)
-            startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK))
+            startActivity(intent)
+            overridePendingTransition(R.anim.right_to_left,R.anim.right_to_left_out)
         }
         recyclerView.adapter = adapter
-
 
         listP.addAll(list)
 
@@ -172,8 +181,28 @@ class MainActivity : AppCompatActivity() {
         btnNextN.setOnClickListener { connectService(3) }
         btnPrevious.setOnClickListener { connectService(1) }
         btnPlayN.setOnClickListener { connectService(2) }
-        layoutPodcast.setOnClickListener { finish() }
-
+        layoutPodcast.setOnClickListener {
+            if (activity) {
+                finish()
+                overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
+            }else {
+                val podcast = list[position]
+                val bundle1 = Bundle()
+                bundle1.putString("Uri", podcast.uri)
+                bundle1.putInt("currentTime", 0)
+                bundle1.putInt("action", 0)
+                bundle1.putBoolean("activity", true)
+                bundle1.putInt("timer", timer)
+                var checkTimer = false
+                if (timer != 0)
+                    checkTimer = true
+                bundle1.putBoolean("checkTimer", checkTimer)
+                val intent = Intent(this, PlayActivity::class.java)
+                intent.putExtras(bundle1)
+                startActivity(intent)
+                overridePendingTransition(R.anim.right_to_left,R.anim.right_to_left_out)
+            }
+        }
 
 
         LocalBroadcastManager.getInstance(this)
@@ -231,8 +260,8 @@ class MainActivity : AppCompatActivity() {
         sendBroadcast(intent)
     }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onDestroy() {
+        super.onDestroy()
         LocalBroadcastManager.getInstance(this)
             .unregisterReceiver(broadcastPodcast)
         LocalBroadcastManager.getInstance(this)

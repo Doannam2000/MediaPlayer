@@ -75,7 +75,6 @@ class MyService : Service() {
 
     val handleTime = Handler()
 
-
     val runTime = Runnable {
         var duration = TimeUnit.MINUTES.toMillis(timer.toLong())
         countDown = object : CountDownTimer(duration,1000){
@@ -310,6 +309,7 @@ class MyService : Service() {
         val intent = Intent("Pause_Play")
         val bundle = Bundle()
         bundle.putBoolean("checked", check)
+        bundle.putInt("timer", timer)
         intent.putExtras(bundle)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }

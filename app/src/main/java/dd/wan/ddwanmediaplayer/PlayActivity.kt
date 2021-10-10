@@ -52,6 +52,7 @@ class PlayActivity : AppCompatActivity() {
     var action = 0
     var check = true
     var timer = 0
+    var activity = false
 
     @SuppressLint("SimpleDateFormat")
     val sdf = SimpleDateFormat("mm:ss")
@@ -98,6 +99,11 @@ class PlayActivity : AppCompatActivity() {
                 btnPlay.setImageResource(R.drawable.ic_baseline_pause_24)
             else
                 btnPlay.setImageResource(R.drawable.ic_outline_play_arrow_24)
+            timer = p1.extras!!.getInt("timer")
+            if (timer != 0)
+                btnClock.alpha = 1F
+            else
+                btnClock.alpha = 0.5F
         }
     }
 
@@ -109,6 +115,7 @@ class PlayActivity : AppCompatActivity() {
         val bundle = intent.extras
         currentTime = bundle!!.getInt("currentTime")
         timer = bundle.getInt("timer")
+        activity = bundle.getBoolean("activity")
         val uri = bundle.getString("Uri")
         for (i in 0 until list.size) {
             if (list[i].uri == uri)
@@ -116,7 +123,7 @@ class PlayActivity : AppCompatActivity() {
         }
         if (currentTime == 0)
             imageView.animation = AnimationUtils.loadAnimation(this, R.anim.anim_rotate)
-        if(timer!=0)
+        if (timer != 0)
             btnClock.alpha = 1F
         else
             btnClock.alpha = 0.5F
@@ -209,21 +216,27 @@ class PlayActivity : AppCompatActivity() {
             }
         }
         previous.setOnClickListener {
-            val intent = Intent(this, MainActivity::class.java)
-            val bundle1 = Bundle()
-            bundle1.putString("Uri", list[position].uri)
-            bundle1.putInt("type", type)
-            bundle1.putInt("action", action)
-            bundle1.putInt("currentTime", currentTime)
-            bundle1.putBoolean("checked", check)
-            bundle1.putInt("timer", timer)
-            var checkTimer = false
-            if(timer!=0)
-                checkTimer = true
-            bundle1.putBoolean("checkTimer", checkTimer)
-            intent.putExtras(bundle1)
-            startActivity(intent)
-            overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
+            if (!activity) {
+                val intent = Intent(this, MainActivity::class.java)
+                val bundle1 = Bundle()
+                bundle1.putString("Uri", list[position].uri)
+                bundle1.putInt("type", type)
+                bundle1.putInt("action", action)
+                bundle1.putInt("currentTime", currentTime)
+                bundle1.putBoolean("checked", check)
+                bundle1.putBoolean("activity", true)
+                bundle1.putInt("timer", timer)
+                var checkTimer = false
+                if (timer != 0)
+                    checkTimer = true
+                bundle1.putBoolean("checkTimer", checkTimer)
+                intent.putExtras(bundle1)
+                startActivity(intent)
+                overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
+            } else {
+                finish()
+                overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
+            }
         }
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
@@ -294,7 +307,7 @@ class PlayActivity : AppCompatActivity() {
                         if (view.settingHour.isChecked) {
                             timer = 60 * view.settingTime.text.toString().toInt()
                         }
-                        if(timer!=0)
+                        if (timer != 0)
                             btnClock.alpha = 1F
                         connectService(ACTION_TIMER)
                     }
@@ -309,7 +322,7 @@ class PlayActivity : AppCompatActivity() {
             if (timer == 0) {
                 btnClock.alpha = 0.5F
                 nameTimer.text = "Hẹn giờ"
-                time.text="Lựa chọn"
+                time.text = "Lựa chọn"
             } else {
                 time.text = "Hủy hẹn giờ"
                 if (timer > 60) {
@@ -319,7 +332,6 @@ class PlayActivity : AppCompatActivity() {
             }
         }
     }
-
 
 
     fun updateUI() {
@@ -345,7 +357,7 @@ class PlayActivity : AppCompatActivity() {
         bundle.putInt("action", ac)
         bundle.putInt("timer", timer)
         var checkTimer = false
-        if(timer!=0)
+        if (timer != 0)
             checkTimer = true
         bundle.putBoolean("checkTimer", checkTimer)
         bundle.putInt("currentTime", currentTime)
