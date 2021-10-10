@@ -121,8 +121,7 @@ class PlayActivity : AppCompatActivity() {
             if (list[i].uri == uri)
                 position = i
         }
-        if (currentTime == 0)
-            imageView.animation = AnimationUtils.loadAnimation(this, R.anim.anim_rotate)
+        imageView.animation = AnimationUtils.loadAnimation(this, R.anim.anim_rotate)
         if (timer != 0)
             btnClock.alpha = 1F
         else

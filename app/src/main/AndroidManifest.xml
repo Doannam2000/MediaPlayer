@@ -17,11 +17,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DDWANMediaPlayer">
         <activity
-            android:launchMode="singleTask"
             android:name=".PlayActivity"
-            android:exported="true" />
+            android:exported="true"
+            android:screenOrientation="portrait"/>
         <activity
-            android:launchMode="singleTask"
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
