@@ -162,8 +162,8 @@ class PlayActivity : AppCompatActivity() {
         btnNext.setOnClickListener { connectService(ACTION_NEXT_SONG) }
 
         btnRepeat.setOnClickListener {
-            if (type == 2)
-                type = 0
+            if (type == ACTION_NOT_REPEAT)
+                type = ACTION_REPEAT_ALL
             else
                 type++
             when (type) {
@@ -171,12 +171,9 @@ class PlayActivity : AppCompatActivity() {
                 ACTION_REPEAT_THIS_SONG -> {
                     btnRepeat.setImageResource(R.drawable.repeat1)
                     shuffle = false
-                    btnShuffle.alpha = 0.5F
                 }
                 ACTION_NOT_REPEAT -> {
                     btnRepeat.setImageResource(R.drawable.repeat)
-                    shuffle = false
-                    btnShuffle.alpha = 0.5F
                 }
             }
             edit.putInt("type", type)
@@ -191,8 +188,10 @@ class PlayActivity : AppCompatActivity() {
             } else {
                 shuffle = true
                 btnShuffle.alpha = 1F
-                btnRepeat.setImageResource(R.drawable.repeat_all)
-                type = 0
+                if (type == ACTION_REPEAT_THIS_SONG) {
+                    btnRepeat.setImageResource(R.drawable.repeat_all)
+                    type = 0
+                }
             }
             edit.putBoolean("shuffle", shuffle)
             edit.putInt("type", type)
