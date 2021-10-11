@@ -25,18 +25,15 @@ import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_ALL
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_THIS_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_STOP_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_TIMER
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
 import dd.wan.ddwanmediaplayer.PlayActivity
 import dd.wan.ddwanmediaplayer.R
-import dd.wan.ddwanmediaplayer.model.Podcast
 import dd.wan.ddwanmediaplayer.model.ReadPodcast
-import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 
 class MyService : Service() {
     var mediaPlayer = MediaPlayer()
-    var list = ArrayList<Podcast>()
     var type = 0
     var position = 0
     var currentTime = 0
@@ -113,10 +110,6 @@ class MyService : Service() {
         return null
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        list = ReadPodcast(this).loadSong()
-    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val bundle = intent!!.extras
@@ -236,6 +229,10 @@ class MyService : Service() {
         bundle.putString("Uri", list[position].uri)
         bundle.putInt("action", action)
         bundle.putInt("timer", timer)
+        if(mediaPlayer.isPlaying)
+            bundle.putBoolean("checked", true)
+        else
+            bundle.putBoolean("checked", false)
         bundle.putInt("currentTime", mediaPlayer.currentPosition)
         intent.putExtras(bundle)
         val pendingIntent =
@@ -347,7 +344,6 @@ class MyService : Service() {
             position = random.nextInt(list.size)
         }
         arrayPlayed.add(position)
-        Log.d("checkeddd", arrayPlayed.size.toString())
     }
 
     fun stopSong()

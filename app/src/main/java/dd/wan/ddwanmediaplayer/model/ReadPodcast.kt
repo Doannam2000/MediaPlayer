@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.provider.MediaStore
-import android.util.Log
 
 class ReadPodcast(var context: Context) {
     @SuppressLint("Range")

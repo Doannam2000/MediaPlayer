@@ -17,15 +17,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dd.wan.ddwanmediaplayer.adapter.RecyclerAdapter
 import dd.wan.ddwanmediaplayer.model.Podcast
-import dd.wan.ddwanmediaplayer.model.ReadPodcast
 import dd.wan.ddwanmediaplayer.service.Broadcast
 import dd.wan.ddwanmediaplayer.service.MyService
 import kotlinx.android.synthetic.main.activity_main.*
-
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
 
 class MainActivity : AppCompatActivity() {
     var position = 0
-    var list = ArrayList<Podcast>()
     var currentTime = 0
     var check = true
     var listP = ArrayList<Podcast>()
@@ -82,7 +80,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        list = ReadPodcast(this).loadSong()
         val searchView: TextView = findViewById(R.id.searchView)
         val recyclerView: RecyclerView = findViewById(R.id.list_Podcast)
         if (list.size != 0) {

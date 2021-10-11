@@ -14,11 +14,8 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import dd.wan.ddwanmediaplayer.model.Podcast
-import dd.wan.ddwanmediaplayer.model.ReadPodcast
 import kotlinx.android.synthetic.main.activity_play.*
 import java.text.SimpleDateFormat
-import kotlin.collections.ArrayList
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.View
@@ -31,9 +28,11 @@ import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PREVIOUS_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_ALL
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_THIS_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_TIMER
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
 import dd.wan.ddwanmediaplayer.service.Broadcast
 import kotlinx.android.synthetic.main.custom_editext_dialog.view.*
 import android.app.ActivityManager
+import android.util.Log
 import dd.wan.ddwanmediaplayer.service.MyService
 
 
@@ -43,7 +42,6 @@ class PlayActivity : AppCompatActivity() {
     var shuffle = false
     private var position = 0
     private var currentTime = 0
-    private var list = ArrayList<Podcast>()
     var action = 0
     var check = true
     var timer = 0
@@ -106,10 +104,12 @@ class PlayActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_play)
 
-        list = ReadPodcast(this).loadSong()
         val bundle = intent.extras
         currentTime = bundle!!.getInt("currentTime")
         timer = bundle.getInt("timer")
+        check = bundle.getBoolean("checked",true)
+        Log.d("checkdddd",check.toString() )
+
         activity = bundle.getBoolean("activity")
         val uri = bundle.getString("Uri")
         for (i in 0 until list.size) {
@@ -117,11 +117,12 @@ class PlayActivity : AppCompatActivity() {
                 position = i
         }
         imageView.animation = AnimationUtils.loadAnimation(this, R.anim.anim_rotate)
+
         if (timer != 0)
             btnClock.alpha = 1F
         else
             btnClock.alpha = 0.5F
-        seekBar.progress = currentTime
+
 
         val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
         val edit = sharedPreferences.edit()
@@ -149,7 +150,7 @@ class PlayActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
         updateUI()
-
+        seekBar.progress = currentTime
         btnPlay.setOnClickListener { connectService(ACTION_PAUSE_OR_PLAY) }
 
         btnBack.setOnClickListener { connectService(ACTION_PREVIOUS_SONG) }
@@ -319,7 +320,6 @@ class PlayActivity : AppCompatActivity() {
         }
     }
 
-
     fun updateUI() {
         if (list[position].image.isNotEmpty()) {
             val image = list[position].image
@@ -327,11 +327,14 @@ class PlayActivity : AppCompatActivity() {
         } else {
             imageView.setImageResource(R.drawable.music_icon)
         }
+        time1.text = sdf.format(currentTime)
         name1.text = list[position].title
         val string = "${list[position].title} \n\n ${list[position].artist}"
         name.text = string
-
-        btnPlay.setImageResource(R.drawable.ic_baseline_pause_24)
+        if (check)
+            btnPlay.setImageResource(R.drawable.ic_baseline_pause_24)
+        else
+            btnPlay.setImageResource(R.drawable.ic_outline_play_arrow_24)
         time2.text = sdf.format(list[position].duration)
         seekBar.max = list[position].duration
     }

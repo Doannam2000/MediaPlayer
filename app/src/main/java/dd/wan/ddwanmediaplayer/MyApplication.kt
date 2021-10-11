@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import dd.wan.ddwanmediaplayer.model.Podcast
 
 class MyApplication : Application() {
 
@@ -18,6 +19,7 @@ class MyApplication : Application() {
         const val ACTION_REPEAT_ALL = 0
         const val ACTION_REPEAT_THIS_SONG = 1
         const val ACTION_NOT_REPEAT = 2
+        var list = ArrayList<Podcast>()
     }
 
     override fun onCreate() {

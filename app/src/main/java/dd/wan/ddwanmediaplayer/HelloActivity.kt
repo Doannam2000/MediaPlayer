@@ -6,7 +6,9 @@ import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import dd.wan.ddwanmediaplayer.model.ReadPodcast
 import kotlin.system.exitProcess
 
 class HelloActivity : AppCompatActivity() {
@@ -14,7 +16,6 @@ class HelloActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_hello)
         requestPermission()
-
     }
 
     override fun onRequestPermissionsResult(
@@ -24,6 +25,7 @@ class HelloActivity : AppCompatActivity() {
     ) {
         if (requestCode == 123) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                MyApplication.list = ReadPodcast(this).loadSong()
                 Handler().postDelayed({
                     startActivity(
                         Intent(
@@ -56,6 +58,8 @@ class HelloActivity : AppCompatActivity() {
                 123
             )
         } else {
+            MyApplication.list = ReadPodcast(this).loadSong()
+            Toast.makeText(this,MyApplication.list.size.toString(),Toast.LENGTH_SHORT).show()
             Handler().postDelayed({
                 startActivity(
                     Intent(
