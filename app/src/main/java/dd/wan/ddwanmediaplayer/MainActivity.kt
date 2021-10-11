@@ -22,8 +22,9 @@ import androidx.recyclerview.widget.RecyclerView
 import dd.wan.ddwanmediaplayer.adapter.RecyclerAdapter
 import dd.wan.ddwanmediaplayer.model.Podcast
 import dd.wan.ddwanmediaplayer.model.ReadPodcast
+import dd.wan.ddwanmediaplayer.service.Broadcast
+import dd.wan.ddwanmediaplayer.service.MyService
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.activity_play.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -83,15 +84,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        requestPermission()
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            Toast.makeText(this, "Không có quyền truy cập bộ nhớ", Toast.LENGTH_SHORT).show()
-        } else
-            list = ReadPodcast(this).loadSong()
+        list = ReadPodcast(this).loadSong()
         val searchView: TextView = findViewById(R.id.searchView)
         val recyclerView: RecyclerView = findViewById(R.id.list_Podcast)
         if (list.size != 0) {
@@ -212,43 +205,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray,
-    ) {
-        if (requestCode == 123) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startActivity(
-                    Intent(
-                        this,
-                        MainActivity::class.java
-                    ).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                )
-            } else {
-                Toast.makeText(this, "Không có quyền truy cập bộ nhớ !!!", Toast.LENGTH_SHORT)
-                    .show()
-            }
-        }
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-    }
 
-    private fun requestPermission() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                ),
-                123
-            )
-        }
-    }
 
     private fun connectService(ac: Int) {
         val intent = Intent(this, Broadcast::class.java)

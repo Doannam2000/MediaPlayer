@@ -9,12 +9,9 @@ import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.animation.Animation
 import android.view.animation.AnimationUtils
-import android.widget.PopupMenu
 import android.widget.SeekBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import dd.wan.ddwanmediaplayer.model.Podcast
@@ -22,10 +19,7 @@ import dd.wan.ddwanmediaplayer.model.ReadPodcast
 import kotlinx.android.synthetic.main.activity_play.*
 import java.text.SimpleDateFormat
 import kotlin.collections.ArrayList
-import android.widget.TimePicker
 
-import android.app.TimePickerDialog
-import android.app.TimePickerDialog.OnTimeSetListener
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.View
@@ -38,8 +32,10 @@ import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PREVIOUS_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_ALL
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_THIS_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_TIMER
+import dd.wan.ddwanmediaplayer.service.Broadcast
 import kotlinx.android.synthetic.main.custom_editext_dialog.view.*
-import java.util.*
+import android.app.ActivityManager
+import dd.wan.ddwanmediaplayer.service.MyService
 
 
 class PlayActivity : AppCompatActivity() {
@@ -170,14 +166,12 @@ class PlayActivity : AppCompatActivity() {
                 ACTION_REPEAT_ALL -> btnRepeat.setImageResource(R.drawable.repeat_all)
                 ACTION_REPEAT_THIS_SONG -> {
                     btnRepeat.setImageResource(R.drawable.repeat1)
-                    shuffle = false
                 }
                 ACTION_NOT_REPEAT -> {
                     btnRepeat.setImageResource(R.drawable.repeat)
                 }
             }
             edit.putInt("type", type)
-            edit.putBoolean("shuffle", shuffle)
             edit.commit()
             connectService(ACTION_CHANGE)
         }
@@ -188,13 +182,8 @@ class PlayActivity : AppCompatActivity() {
             } else {
                 shuffle = true
                 btnShuffle.alpha = 1F
-                if (type == ACTION_REPEAT_THIS_SONG) {
-                    btnRepeat.setImageResource(R.drawable.repeat_all)
-                    type = 0
-                }
             }
             edit.putBoolean("shuffle", shuffle)
-            edit.putInt("type", type)
             edit.commit()
             connectService(ACTION_CHANGE)
         }
@@ -349,18 +338,30 @@ class PlayActivity : AppCompatActivity() {
     }
 
     fun connectService(ac: Int) {
-        val intent = Intent(this, Broadcast::class.java)
         val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
-        bundle.putInt("action", ac)
         bundle.putInt("timer", timer)
         var checkTimer = false
         if (timer != 0)
             checkTimer = true
         bundle.putBoolean("checkTimer", checkTimer)
         bundle.putInt("currentTime", currentTime)
-        intent.putExtras(bundle)
-        sendBroadcast(intent)
+        if(isMyServiceRunning(MyService::class.java))
+        {
+            bundle.putInt("action", ac)
+            val intent = Intent(this, Broadcast::class.java)
+            intent.putExtras(bundle)
+            sendBroadcast(intent)
+        }
+        else{
+            if(ac == ACTION_PAUSE_OR_PLAY)
+                bundle.putInt("action", ACTION_PLAY_SONG)
+            else
+                bundle.putInt("action", ac)
+            val intent = Intent(this,MyService::class.java)
+            intent.putExtras(bundle)
+            startService(intent)
+        }
     }
 
     override fun onDestroy() {
@@ -368,5 +369,14 @@ class PlayActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPosition)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPodcast)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPlay)
+    }
+    private fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
+        val manager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
+        for (service in manager.getRunningServices(Int.MAX_VALUE)) {
+            if (serviceClass.name == service.service.className) {
+                return true
+            }
+        }
+        return false
     }
 }

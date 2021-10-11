@@ -1,4 +1,4 @@
-package dd.wan.ddwanmediaplayer
+package dd.wan.ddwanmediaplayer.service
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
@@ -15,13 +15,18 @@ import android.util.Log
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import dd.wan.ddwanmediaplayer.MyApplication
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_NEXT_SONG
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_NOT_REPEAT
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PAUSE_OR_PLAY
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PLAY_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PREVIOUS_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_ALL
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_THIS_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_STOP_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_TIMER
+import dd.wan.ddwanmediaplayer.PlayActivity
+import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.model.Podcast
 import dd.wan.ddwanmediaplayer.model.ReadPodcast
 import java.util.*
@@ -47,13 +52,15 @@ class MyService : Service() {
                 currentTime = 0
                 when (type) {
                     ACTION_REPEAT_ALL -> {
-                        clearArrayPlayed()
+                        if (arrayPlayed.size == list.size) {
+                            arrayPlayed.clear()
+                        }
                         nextSong()
                     }
-                    MyApplication.ACTION_REPEAT_THIS_SONG -> {
+                    ACTION_REPEAT_THIS_SONG -> {
                         playSong()
                     }
-                    MyApplication.ACTION_NOT_REPEAT -> {
+                    ACTION_NOT_REPEAT -> {
                         if (shuffle) {
                             if (arrayPlayed.size < list.size)
                                 nextSong()
@@ -80,10 +87,10 @@ class MyService : Service() {
 
     lateinit var countDown: CountDownTimer
 
-    val handleTime = Handler()
+    private val handleTime = Handler()
 
-    val runTime = Runnable {
-        var duration = TimeUnit.MINUTES.toMillis(timer.toLong())
+    private val runTime = Runnable {
+        val duration = TimeUnit.MINUTES.toMillis(timer.toLong())
         countDown = object : CountDownTimer(duration, 1000) {
             override fun onTick(p0: Long) {
             }
@@ -132,18 +139,23 @@ class MyService : Service() {
                 play()
             }
             ACTION_PREVIOUS_SONG -> {
-                clearArrayPlayed()
+                if (arrayPlayed.size == list.size) {
+                    arrayPlayed.clear()
+                }
                 previous()
             }
             ACTION_PAUSE_OR_PLAY -> {
                 playOr()
             }
             ACTION_NEXT_SONG -> {
-                clearArrayPlayed()
+                if (arrayPlayed.size == list.size) {
+                    arrayPlayed.clear()
+                }
                 nextSong()
             }
             ACTION_STOP_SONG -> {
                 handle.removeCallbacks(run)
+                playOrPause(false)
                 stopSelf()
             }
             ACTION_TIMER -> {
@@ -163,13 +175,13 @@ class MyService : Service() {
         return START_NOT_STICKY
     }
 
-    fun play() {
+    private fun play() {
         playSong()
         createNotification()
         playOrPause(true)
     }
 
-    fun previous() {
+    private fun previous() {
         if (shuffle) {
             randomSong()
         } else {
@@ -184,7 +196,7 @@ class MyService : Service() {
         sendDataToActivity()
     }
 
-    fun playOr() {
+    private fun playOr() {
         if (mediaPlayer.isPlaying) {
             mediaPlayer.pause()
             playOrPause(false)
@@ -325,7 +337,7 @@ class MyService : Service() {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
-    fun randomSong() {
+    private fun randomSong() {
         val random = Random()
         position = random.nextInt(list.size)
         while (arrayPlayed.contains(position)) {
@@ -335,13 +347,6 @@ class MyService : Service() {
         Log.d("checkeddd", arrayPlayed.size.toString())
     }
 
-    fun clearArrayPlayed()
-    {
-        if (arrayPlayed.size == list.size) {
-            arrayPlayed.clear()
-            arrayPlayed.add(position)
-        }
-    }
     fun stopSong()
     {
         position = 0
