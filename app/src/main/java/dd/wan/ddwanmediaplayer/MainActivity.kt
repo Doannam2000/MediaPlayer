@@ -25,6 +25,7 @@ import dd.wan.ddwanmediaplayer.model.ReadPodcast
 import dd.wan.ddwanmediaplayer.service.Broadcast
 import dd.wan.ddwanmediaplayer.service.MyService
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.activity_play.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -76,6 +77,8 @@ class MainActivity : AppCompatActivity() {
                 if (list[position].image.isNotEmpty()) {
                     val image = list[position].image
                     imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+                } else {
+                    imageP.setImageResource(R.drawable.music_icon)
                 }
             }
         }
