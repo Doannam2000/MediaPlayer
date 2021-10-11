@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
-import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import kotlin.system.exitProcess
 

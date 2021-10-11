@@ -19,7 +19,6 @@ import dd.wan.ddwanmediaplayer.model.ReadPodcast
 import kotlinx.android.synthetic.main.activity_play.*
 import java.text.SimpleDateFormat
 import kotlin.collections.ArrayList
-
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.View

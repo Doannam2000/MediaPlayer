@@ -1,13 +1,9 @@
 package dd.wan.ddwanmediaplayer
 
-import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.Toast
-import androidx.core.app.ActivityCompat
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.BitmapFactory
@@ -25,7 +21,6 @@ import dd.wan.ddwanmediaplayer.model.ReadPodcast
 import dd.wan.ddwanmediaplayer.service.Broadcast
 import dd.wan.ddwanmediaplayer.service.MyService
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.activity_play.*
 
 
 class MainActivity : AppCompatActivity() {
