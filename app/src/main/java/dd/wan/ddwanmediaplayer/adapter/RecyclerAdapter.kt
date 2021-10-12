@@ -41,8 +41,13 @@ class RecyclerAdapter(var list: ArrayList<Podcast>) :
         fun setData() {
             name.text = list[adapterPosition].title
             if (list[adapterPosition].image.isNotEmpty()) {
-                var image = list[adapterPosition].image
-                imagePodcast.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image!!.size))
+                try {
+                    var image = list[adapterPosition].image
+                    imagePodcast.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image!!.size))
+                }catch (e:Exception)
+                {
+
+                }
             }
         }
 
