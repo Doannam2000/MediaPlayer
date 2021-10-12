@@ -27,19 +27,22 @@ class ReadPodcast(var context: Context) {
                 var uri = rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.DATA))
                 var title = rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.TITLE))
                 var artist = rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.ARTIST))
+                var duration =
+                    rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.DURATION)) as String
                 var media = MediaMetadataRetriever()
-                media.setDataSource(uri)
-                var duration = media.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION) as String
-                var bitmap: ByteArray
-                bitmap = try{
+                try {
+                    media.setDataSource(uri)
+                } catch (e: Exception) {
+                }
+                var bitmap: ByteArray = try {
                     if (media.embeddedPicture != null) {
                         media.embeddedPicture!!
-                    }else
+                    } else
                         byteArrayOf()
-                }catch (e:Exception) {
+                } catch (e: Exception) {
                     byteArrayOf()
                 }
-                list.add(Podcast(uri, title, artist, bitmap,duration.toInt()))
+                list.add(Podcast(uri, title, artist, bitmap, duration.toInt()))
             }
         }
         return list

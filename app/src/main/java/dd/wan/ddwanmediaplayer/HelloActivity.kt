@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
 import dd.wan.ddwanmediaplayer.model.ReadPodcast
 import kotlin.system.exitProcess
 
@@ -25,7 +26,7 @@ class HelloActivity : AppCompatActivity() {
     ) {
         if (requestCode == 123) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                MyApplication.list = ReadPodcast(this).loadSong()
+                list = ReadPodcast(this).loadSong()
                 Handler().postDelayed({
                     startActivity(
                         Intent(
@@ -35,7 +36,7 @@ class HelloActivity : AppCompatActivity() {
                     )
                     overridePendingTransition(R.anim.right_to_left,R.anim.right_to_left_out)
                     finish()
-                }, 2000)
+                }, 1500)
             } else {
                 finish()
                 exitProcess(0)
@@ -58,7 +59,7 @@ class HelloActivity : AppCompatActivity() {
                 123
             )
         } else {
-            MyApplication.list = ReadPodcast(this).loadSong()
+            list = ReadPodcast(this).loadSong()
             Handler().postDelayed({
                 startActivity(
                     Intent(
@@ -68,7 +69,7 @@ class HelloActivity : AppCompatActivity() {
                 )
                 overridePendingTransition(R.anim.right_to_left,R.anim.right_to_left_out)
                 finish()
-            }, 2000)
+            }, 1500)
         }
     }
 }
