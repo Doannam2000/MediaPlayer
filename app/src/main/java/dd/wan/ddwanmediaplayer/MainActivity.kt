@@ -21,6 +21,8 @@ import dd.wan.ddwanmediaplayer.service.Broadcast
 import dd.wan.ddwanmediaplayer.service.MyService
 import kotlinx.android.synthetic.main.activity_main.*
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
+import kotlinx.android.synthetic.main.activity_play.*
+import java.lang.Exception
 
 class MainActivity : AppCompatActivity() {
     var position = 0
@@ -68,8 +70,13 @@ class MainActivity : AppCompatActivity() {
                 nameSong.text = list[position].title
                 nameAuth.text = list[position].artist
                 if (list[position].image.isNotEmpty()) {
-                    val image = list[position].image
-                    imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+                    try{
+                        val image = list[position].image
+                        imageView.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+                    }catch (e:Exception)
+                    {
+                        imageView.setImageResource(R.drawable.music_icon)
+                    }
                 } else {
                     imageP.setImageResource(R.drawable.music_icon)
                 }
@@ -95,8 +102,13 @@ class MainActivity : AppCompatActivity() {
                     nameSong.text = list[position].title
                     nameAuth.text = list[position].artist
                     if (list[position].image.isNotEmpty()) {
-                        val image = list[position].image
-                        imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+                        try{
+                            val image = list[position].image
+                            imageView.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+                        }catch (e:Exception)
+                        {
+                            imageView.setImageResource(R.drawable.music_icon)
+                        }
                     }
                     check = bundle.getBoolean("checked")
                     checkTimer = bundle.getBoolean("checkTimer")
@@ -128,8 +140,11 @@ class MainActivity : AppCompatActivity() {
             nameSong.text = podcast.title
             nameAuth.text = podcast.artist
             if (podcast.image.isNotEmpty()) {
-                val image = podcast.image
-                imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+                try {
+                    val image = podcast.image
+                    imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+                } catch (e: Exception) {
+                }
             }
 
             if (timer != 0)
@@ -143,7 +158,7 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, PlayActivity::class.java)
             intent.putExtras(bundle1)
             startActivity(intent)
-            overridePendingTransition(R.anim.right_to_left,R.anim.right_to_left_out)
+            overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
         }
         recyclerView.adapter = adapter
 
@@ -173,7 +188,7 @@ class MainActivity : AppCompatActivity() {
             if (activity) {
                 finish()
                 overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
-            }else {
+            } else {
                 val podcast = list[position]
                 val bundle1 = Bundle()
                 bundle1.putString("Uri", podcast.uri)
@@ -188,7 +203,7 @@ class MainActivity : AppCompatActivity() {
                 val intent = Intent(this, PlayActivity::class.java)
                 intent.putExtras(bundle1)
                 startActivity(intent)
-                overridePendingTransition(R.anim.right_to_left,R.anim.right_to_left_out)
+                overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
             }
         }
 
@@ -199,7 +214,6 @@ class MainActivity : AppCompatActivity() {
             .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
 
     }
-
 
 
     private fun connectService(ac: Int) {

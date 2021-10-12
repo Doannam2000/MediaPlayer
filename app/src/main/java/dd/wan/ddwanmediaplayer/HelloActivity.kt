@@ -59,7 +59,6 @@ class HelloActivity : AppCompatActivity() {
             )
         } else {
             MyApplication.list = ReadPodcast(this).loadSong()
-            Toast.makeText(this,MyApplication.list.size.toString(),Toast.LENGTH_SHORT).show()
             Handler().postDelayed({
                 startActivity(
                     Intent(

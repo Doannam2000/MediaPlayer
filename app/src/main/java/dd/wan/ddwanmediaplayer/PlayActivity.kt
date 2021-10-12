@@ -322,8 +322,13 @@ class PlayActivity : AppCompatActivity() {
 
     fun updateUI() {
         if (list[position].image.isNotEmpty()) {
-            val image = list[position].image
-            imageView.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+            try{
+                val image = list[position].image
+                imageView.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+            }catch (e:Exception)
+            {
+                imageView.setImageResource(R.drawable.music_icon)
+            }
         } else {
             imageView.setImageResource(R.drawable.music_icon)
         }

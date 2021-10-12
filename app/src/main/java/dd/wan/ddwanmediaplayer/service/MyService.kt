@@ -29,6 +29,7 @@ import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
 import dd.wan.ddwanmediaplayer.PlayActivity
 import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.model.ReadPodcast
+import kotlinx.android.synthetic.main.activity_play.*
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -258,11 +259,14 @@ class MyService : Service() {
         remoteView.setOnClickPendingIntent(R.id.btnPlayN, sendAction(ACTION_PAUSE_OR_PLAY))
         remoteView.setOnClickPendingIntent(R.id.btnExit, sendAction(ACTION_STOP_SONG))
 
-        if (podcast.image.isNotEmpty())
-            remoteView.setImageViewBitmap(
-                R.id.imageView,
-                BitmapFactory.decodeByteArray(podcast.image, 0, podcast.image.size)
-            )else {
+        if (podcast.image.isNotEmpty()) {
+            try {
+                val image = list[position].image
+                remoteView.setImageViewBitmap(R.id.imageView,BitmapFactory.decodeByteArray(image, 0, image.size))
+            } catch (e: Exception) {
+                remoteView.setImageViewResource(R.id.imageView,R.drawable.music_icon)
+            }
+        }else {
             remoteView.setImageViewResource(R.id.imageView,R.drawable.music_icon)
         }
         val notification = NotificationCompat.Builder(this, "DDWAN")
