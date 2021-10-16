@@ -74,7 +74,6 @@
         android:layout_width="match_parent"
         android:layout_height="64dp"
         android:background="#D8D0D0"
-        android:visibility="gone"
         android:weightSum="5"
         app:layout_constraintBottom_toBottomOf="parent">
 
@@ -135,7 +134,7 @@
                 android:layout_width="35dp"
                 android:layout_height="match_parent"
                 android:layout_toStartOf="@+id/btnNext"
-                android:src="@drawable/ic_baseline_pause_24"
+                android:src="@drawable/ic_outline_play_arrow_24"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/btnNext"
                 app:layout_constraintTop_toTopOf="parent" />

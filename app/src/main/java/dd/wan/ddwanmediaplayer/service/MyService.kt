@@ -7,15 +7,13 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.media.MediaPlayer
-import android.os.Bundle
-import android.os.CountDownTimer
-import android.os.Handler
-import android.os.IBinder
+import android.os.*
 import android.util.Log
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dd.wan.ddwanmediaplayer.MyApplication
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_CHECK
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_NEXT_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_NOT_REPEAT
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PAUSE_OR_PLAY
@@ -43,47 +41,7 @@ class MyService : Service() {
     var isStop = false
     var timer = 0
     var checkTimer = false
-    val handle = Handler()
-    private val arrayPlayed = mutableSetOf<Int>()
-    var run = object : Runnable {
-        override fun run() {
-            mediaPlayer.setOnCompletionListener {
-                currentTime = 0
-                when (type) {
-                    ACTION_REPEAT_ALL -> {
-                        if (arrayPlayed.size == list.size) {
-                            arrayPlayed.clear()
-                        }
-                        nextSong()
-                    }
-                    ACTION_REPEAT_THIS_SONG -> {
-                        playSong()
-                    }
-                    ACTION_NOT_REPEAT -> {
-                        if (shuffle) {
-                            if (arrayPlayed.size < list.size)
-                                nextSong()
-                            else {
-                                stopSong()
-                            }
-                        } else {
-                            position++
-                            if (position == list.size) {
-                                stopSong()
-                            } else {
-                                playSong()
-                                createNotification()
-                                sendDataToActivity()
-                            }
-                        }
-                    }
-                }
-            }
-            sendCurrentPosition()
-            handle.postDelayed(this, 500)
-        }
-    }
-
+    val arrayPlayed = mutableSetOf<Int>()
     lateinit var countDown: CountDownTimer
 
     private val handleTime = Handler()
@@ -96,19 +54,26 @@ class MyService : Service() {
 
             override fun onFinish() {
                 timer = 0
+                val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
+                sharedPreferences.edit().putInt("timer",timer).apply()
                 currentTime = 0
                 checkTimer = false
-                handle.removeCallbacks(run)
                 mediaPlayer.pause()
-                playOrPause(false)
+                playOrPause(false, exit = false)
                 createNotification()
             }
         }
         countDown.start()
     }
 
+    var myBinder = MyBinder()
+
+    inner class MyBinder : Binder() {
+        fun getService(): MyService = this@MyService
+    }
+
     override fun onBind(p0: Intent?): IBinder? {
-        return null
+        return myBinder
     }
 
 
@@ -117,16 +82,16 @@ class MyService : Service() {
         action = bundle!!.getInt("action")
         val uri = bundle.getString("Uri")
         currentTime = bundle.getInt("currentTime")
-        timer = bundle.getInt("timer")
         checkTimer = bundle.getBoolean("checkTimer")
-
+        val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
         for (i in list.indices) {
             if (list[i].uri == uri)
                 position = i
         }
-        val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
         type = sharedPreferences.getInt("type", 0)
+        timer = sharedPreferences.getInt("timer",0)
         shuffle = sharedPreferences.getBoolean("shuffle", false)
+
         if (shuffle)
             arrayPlayed.add(position)
         when (action) {
@@ -149,8 +114,7 @@ class MyService : Service() {
                 nextSong()
             }
             ACTION_STOP_SONG -> {
-                handle.removeCallbacks(run)
-                playOrPause(false)
+                playOrPause(check = false, exit = true)
                 stopSelf()
             }
             ACTION_TIMER -> {
@@ -165,6 +129,12 @@ class MyService : Service() {
                 }
                 createNotification()
             }
+            ACTION_CHECK->{
+                if(mediaPlayer.isPlaying)
+                    playOrPause(check = true, exit = false)
+                else
+                    playOrPause(check = false, exit = false)
+            }
         }
 
         return START_NOT_STICKY
@@ -173,10 +143,10 @@ class MyService : Service() {
     private fun play() {
         playSong()
         createNotification()
-        playOrPause(true)
+        playOrPause(true, exit = false)
     }
 
-    private fun previous() {
+    fun previous() {
         if (shuffle) {
             randomSong()
         } else {
@@ -191,18 +161,16 @@ class MyService : Service() {
         sendDataToActivity()
     }
 
-    private fun playOr() {
+    fun playOr() {
         if (mediaPlayer.isPlaying) {
             mediaPlayer.pause()
-            playOrPause(false)
-            handle.removeCallbacks(run)
+            playOrPause(false, exit = false)
         } else {
             if (isStop)
                 playSong()
             else
                 mediaPlayer.start()
-            handle.postDelayed(run, 100)
-            playOrPause(true)
+            playOrPause(true, exit = false)
         }
         createNotification()
     }
@@ -296,32 +264,57 @@ class MyService : Service() {
 
     override fun onDestroy() {
         mediaPlayer.stop()
+        val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putInt("timer",0).apply()
         super.onDestroy()
     }
 
-    fun playSong() {
-        handle.removeCallbacks(run)
-        handle.postDelayed(run, 100)
+    private fun playSong() {
         if (mediaPlayer.isPlaying) {
             mediaPlayer.release()
         }
         mediaPlayer = MediaPlayer()
         mediaPlayer.setDataSource(list[position].uri)
+        val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putString("Uri", list[position].uri).apply()
         mediaPlayer.prepare()
         mediaPlayer.seekTo(currentTime)
         mediaPlayer.start()
+        mediaPlayer.setOnCompletionListener {
+            currentTime = 0
+            when (type) {
+                ACTION_REPEAT_ALL -> {
+                    if (arrayPlayed.size == list.size) {
+                        arrayPlayed.clear()
+                    }
+                    nextSong()
+                }
+                ACTION_REPEAT_THIS_SONG -> {
+                    playSong()
+                }
+                ACTION_NOT_REPEAT -> {
+                    if (shuffle) {
+                        if (arrayPlayed.size < list.size)
+                            nextSong()
+                        else {
+                            stopSong()
+                        }
+                    } else {
+                        position++
+                        if (position == list.size) {
+                            stopSong()
+                        } else {
+                            playSong()
+                            createNotification()
+                            sendDataToActivity()
+                        }
+                    }
+                }
+            }
+        }
     }
 
-
-    fun sendCurrentPosition() {
-        val intent = Intent("Current_Position")
-        val bundle = Bundle()
-        bundle.putInt("currentPosition", mediaPlayer.currentPosition)
-        intent.putExtras(bundle)
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
-    }
-
-    fun sendDataToActivity() {
+    private fun sendDataToActivity() {
         val intent = Intent("Current_Song")
         val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
@@ -329,13 +322,14 @@ class MyService : Service() {
         bundle.putInt("currentTime", currentTime)
         intent.putExtras(bundle)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
-        playOrPause(true)
+        playOrPause(true, exit = false)
     }
 
-    fun playOrPause(check: Boolean) {
+    fun playOrPause(check: Boolean,exit:Boolean) {
         val intent = Intent("Pause_Play")
         val bundle = Bundle()
         bundle.putBoolean("checked", check)
+        bundle.putBoolean("exit", exit)
         bundle.putInt("timer", timer)
         intent.putExtras(bundle)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
@@ -350,7 +344,7 @@ class MyService : Service() {
         arrayPlayed.add(position)
     }
 
-    fun stopSong()
+    private fun stopSong()
     {
         position = 0
         mediaPlayer.seekTo(0)
@@ -358,9 +352,7 @@ class MyService : Service() {
         mediaPlayer.stop()
         createNotification()
         sendDataToActivity()
-        sendCurrentPosition()
-        playOrPause(false)
-        handle.removeCallbacks(run)
+        playOrPause(false, exit = false)
         arrayPlayed.clear()
     }
 }

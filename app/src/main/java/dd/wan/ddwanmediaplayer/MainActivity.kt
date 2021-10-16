@@ -1,5 +1,6 @@
 package dd.wan.ddwanmediaplayer
 
+import android.app.ActivityManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
@@ -15,6 +16,10 @@ import android.widget.TextView
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_NEXT_SONG
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PLAY_SONG
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PREVIOUS_SONG
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_STOP_SONG
 import dd.wan.ddwanmediaplayer.adapter.RecyclerAdapter
 import dd.wan.ddwanmediaplayer.model.Podcast
 import dd.wan.ddwanmediaplayer.service.Broadcast
@@ -32,6 +37,8 @@ class MainActivity : AppCompatActivity() {
     lateinit var adapter: RecyclerAdapter
     var timer = 0
     var checkTimer = false
+    var activity = false
+
     val handle = Handler()
     val run = Runnable {
         val text = searchView.text
@@ -43,7 +50,7 @@ class MainActivity : AppCompatActivity() {
         }
         adapter.notifyDataSetChanged()
     }
-    var activity = false
+
 
     private val broadcastPlay = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
@@ -67,19 +74,7 @@ class MainActivity : AppCompatActivity() {
                     if (list[i].uri == uri)
                         position = i
                 }
-                nameSong.text = list[position].title
-                nameAuth.text = list[position].artist
-                if (list[position].image.isNotEmpty()) {
-                    try{
-                        val image = list[position].image
-                        imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
-                    }catch (e:Exception)
-                    {
-                        imageP.setImageResource(R.drawable.music_icon)
-                    }
-                } else {
-                    imageP.setImageResource(R.drawable.music_icon)
-                }
+                updateUI()
             }
         }
     }
@@ -89,6 +84,17 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         val searchView: TextView = findViewById(R.id.searchView)
         val recyclerView: RecyclerView = findViewById(R.id.list_Podcast)
+
+        timer = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).getInt("timer", 0)
+        val uri =
+            getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).getString("Uri", "")
+        if (uri != "") {
+            for (i in list.indices) {
+                if (list[i].uri == uri)
+                    position = i
+            }
+            updateUI()
+        }
         if (list.size != 0) {
             val bundle = intent.extras
             if (bundle != null) {
@@ -99,17 +105,7 @@ class MainActivity : AppCompatActivity() {
                         if (list[i].uri == uri)
                             position = i
                     }
-                    nameSong.text = list[position].title
-                    nameAuth.text = list[position].artist
-                    if (list[position].image.isNotEmpty()) {
-                        try{
-                            val image = list[position].image
-                            imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
-                        }catch (e:Exception)
-                        {
-                            imageP.setImageResource(R.drawable.music_icon)
-                        }
-                    }
+                    updateUI()
                     check = bundle.getBoolean("checked")
                     checkTimer = bundle.getBoolean("checkTimer")
                     timer = bundle.getInt("timer")
@@ -121,6 +117,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
         // lấy dữ liệu từ playActivity
 
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -129,6 +126,7 @@ class MainActivity : AppCompatActivity() {
         adapter.setCallback {
             layoutPodcast.visibility = View.VISIBLE
             val podcast = list[it]
+            position = it
             val bundle1 = Bundle()
             bundle1.putString("Uri", podcast.uri)
             bundle1.putInt("currentTime", 0)
@@ -137,16 +135,7 @@ class MainActivity : AppCompatActivity() {
             bundle1.putInt("timer", timer)
             var checkTimer = false
 
-            nameSong.text = podcast.title
-            nameAuth.text = podcast.artist
-            if (podcast.image.isNotEmpty()) {
-                try {
-                    val image = podcast.image
-                    imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
-                } catch (e: Exception) {
-                }
-            }
-
+            updateUI()
             if (timer != 0)
                 checkTimer = true
             bundle1.putBoolean("checkTimer", checkTimer)
@@ -178,12 +167,13 @@ class MainActivity : AppCompatActivity() {
         })
 
         btnExit.setOnClickListener {
-            connectService(4)
+            connectService(ACTION_STOP_SONG)
             layoutPodcast.visibility = View.GONE
         }
-        btnNextN.setOnClickListener { connectService(3) }
-        btnPrevious.setOnClickListener { connectService(1) }
-        btnPlayN.setOnClickListener { connectService(2) }
+        btnNextN.setOnClickListener { connectService(ACTION_NEXT_SONG) }
+        btnPrevious.setOnClickListener { connectService(ACTION_PREVIOUS_SONG) }
+        btnPlayN.setOnClickListener { connectService(MyApplication.ACTION_PAUSE_OR_PLAY) }
+
         layoutPodcast.setOnClickListener {
             if (activity) {
                 finish()
@@ -207,23 +197,55 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-
+        updateUI()
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
+        if(isMyServiceRunning(MyService::class.java))
+        {
+            connectService(MyApplication.ACTION_CHECK)
+        }
+    }
+
+    fun updateUI() {
+        nameSong.text = list[position].title
+        nameAuth.text = list[position].artist
+        if (list[position].image.isNotEmpty()) {
+            try {
+                val image = list[position].image
+                imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+            } catch (e: Exception) {
+                imageP.setImageResource(R.drawable.music_icon)
+            }
+        } else {
+            imageP.setImageResource(R.drawable.music_icon)
+        }
 
     }
 
-
     private fun connectService(ac: Int) {
-        val intent = Intent(this, Broadcast::class.java)
         val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
-        bundle.putInt("action", ac)
+        var checkTimer = false
+        if (timer != 0)
+            checkTimer = true
+        bundle.putBoolean("checkTimer", checkTimer)
         bundle.putInt("currentTime", currentTime)
-        intent.putExtras(bundle)
-        sendBroadcast(intent)
+        if (isMyServiceRunning(MyService::class.java)) {
+            bundle.putInt("action", ac)
+            val intent = Intent(this, Broadcast::class.java)
+            intent.putExtras(bundle)
+            sendBroadcast(intent)
+        } else {
+            if (ac == MyApplication.ACTION_PAUSE_OR_PLAY)
+                bundle.putInt("action", ACTION_PLAY_SONG)
+            else
+                bundle.putInt("action", ac)
+            val intent = Intent(this, MyService::class.java)
+            intent.putExtras(bundle)
+            startService(intent)
+        }
     }
 
     override fun onDestroy() {
@@ -232,6 +254,16 @@ class MainActivity : AppCompatActivity() {
             .unregisterReceiver(broadcastPodcast)
         LocalBroadcastManager.getInstance(this)
             .unregisterReceiver(broadcastPlay)
+    }
+
+    private fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
+        val manager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
+        for (service in manager.getRunningServices(Int.MAX_VALUE)) {
+            if (serviceClass.name == service.service.className) {
+                return true
+            }
+        }
+        return false
     }
 
 }

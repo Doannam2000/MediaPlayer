@@ -2,10 +2,6 @@ package dd.wan.ddwanmediaplayer
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -19,12 +15,9 @@ import java.text.SimpleDateFormat
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.View
-import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_CHANGE
-import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_NEXT_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_NOT_REPEAT
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PAUSE_OR_PLAY
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PLAY_SONG
-import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PREVIOUS_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_ALL
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_THIS_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_TIMER
@@ -32,7 +25,9 @@ import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
 import dd.wan.ddwanmediaplayer.service.Broadcast
 import kotlinx.android.synthetic.main.custom_editext_dialog.view.*
 import android.app.ActivityManager
-import android.util.Log
+import android.content.*
+import android.os.Handler
+import android.os.IBinder
 import dd.wan.ddwanmediaplayer.service.MyService
 
 
@@ -50,18 +45,36 @@ class PlayActivity : AppCompatActivity() {
     @SuppressLint("SimpleDateFormat")
     val sdf = SimpleDateFormat("mm:ss")
 
+    lateinit var mySerVice: MyService
+    var bound = false
 
-    private val broadcastPosition = object : BroadcastReceiver() {
-        override fun onReceive(p0: Context?, p1: Intent?) {
-            val bundle = p1?.extras
-            if (bundle == null)
-                return
-            else {
-                currentTime = bundle.getInt("currentPosition")
-                seekBar.progress = currentTime
-                time1.text = sdf.format(currentTime)
-            }
+    var handler = Handler()
+    var run = object : Runnable {
+        override fun run() {
+            seekBar.progress = mySerVice.mediaPlayer.currentPosition
+            time1.text = sdf.format(mySerVice.mediaPlayer.currentPosition)
+            handler.postDelayed(this, 500)
         }
+    }
+
+
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            val binder = service as MyService.MyBinder
+            mySerVice = binder.getService()
+            handler.postDelayed(run, 100)
+            bound = true
+        }
+
+        override fun onServiceDisconnected(arg0: ComponentName) {
+            handler.removeCallbacks(run)
+            bound = false
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        bindService(Intent(this, MyService::class.java), connection, Context.BIND_AUTO_CREATE)
     }
 
     private val broadcastPodcast = object : BroadcastReceiver() {
@@ -97,18 +110,35 @@ class PlayActivity : AppCompatActivity() {
                 btnClock.alpha = 1F
             else
                 btnClock.alpha = 0.5F
+            if(p1.extras!!.getBoolean("exit"))
+            {
+                if(!activity) {
+                    backToMain()
+                    finish()
+                }
+                else{
+                    finish()
+                    overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
+                }
+            }
         }
     }
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_play)
+        val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
+        val edit = sharedPreferences.edit()
+        timer = sharedPreferences.getInt("timer",0)
+        type = sharedPreferences.getInt("type", 0)
+        shuffle = sharedPreferences.getBoolean("shuffle", false)
 
         val bundle = intent.extras
         currentTime = bundle!!.getInt("currentTime")
-        timer = bundle.getInt("timer")
         check = bundle.getBoolean("checked",true)
-        Log.d("checkdddd",check.toString() )
+
 
         activity = bundle.getBoolean("activity")
         val uri = bundle.getString("Uri")
@@ -124,10 +154,8 @@ class PlayActivity : AppCompatActivity() {
             btnClock.alpha = 0.5F
 
 
-        val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
-        val edit = sharedPreferences.edit()
-        type = sharedPreferences.getInt("type", 0)
-        shuffle = sharedPreferences.getBoolean("shuffle", false)
+
+
         when (type) {
             ACTION_REPEAT_ALL -> btnRepeat.setImageResource(R.drawable.repeat_all)
             ACTION_REPEAT_THIS_SONG -> {
@@ -142,20 +170,31 @@ class PlayActivity : AppCompatActivity() {
         else
             btnShuffle.alpha = 0.5F
 
-
-        LocalBroadcastManager.getInstance(this)
-            .registerReceiver(broadcastPosition, IntentFilter("Current_Position"))
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
+
         updateUI()
         seekBar.progress = currentTime
-        btnPlay.setOnClickListener { connectService(ACTION_PAUSE_OR_PLAY) }
 
-        btnBack.setOnClickListener { connectService(ACTION_PREVIOUS_SONG) }
+        btnPlay.setOnClickListener {
+            mySerVice.playOr()
+        }
 
-        btnNext.setOnClickListener { connectService(ACTION_NEXT_SONG) }
+        btnBack.setOnClickListener {
+            if (mySerVice.arrayPlayed.size == list.size) {
+                mySerVice.arrayPlayed.clear()
+            }
+            mySerVice.previous()
+        }
+
+        btnNext.setOnClickListener {
+            if (mySerVice.arrayPlayed.size == list.size) {
+                mySerVice.arrayPlayed.clear()
+            }
+            mySerVice.nextSong()
+        }
 
         btnRepeat.setOnClickListener {
             if (type == ACTION_NOT_REPEAT)
@@ -173,7 +212,7 @@ class PlayActivity : AppCompatActivity() {
             }
             edit.putInt("type", type)
             edit.commit()
-            connectService(ACTION_CHANGE)
+            mySerVice.type = type
         }
         btnShuffle.setOnClickListener {
             if (shuffle) {
@@ -185,41 +224,27 @@ class PlayActivity : AppCompatActivity() {
             }
             edit.putBoolean("shuffle", shuffle)
             edit.commit()
-            connectService(ACTION_CHANGE)
+            mySerVice.shuffle = shuffle
         }
+
 
         btnBackward.setOnClickListener {
             if (currentTime > 15000) {
                 seekBar.progress = currentTime - 10000
                 currentTime -= 10000
-                connectService(ACTION_PLAY_SONG)
+                mySerVice.mediaPlayer.seekTo(currentTime)
             }
         }
         btnForward.setOnClickListener {
             if (currentTime + 10000 < list[position].duration) {
                 seekBar.progress = currentTime + 10000
                 currentTime += 10000
-                connectService(ACTION_PLAY_SONG)
+                mySerVice.mediaPlayer.seekTo(currentTime)
             }
         }
         previous.setOnClickListener {
             if (!activity) {
-                val intent = Intent(this, MainActivity::class.java)
-                val bundle1 = Bundle()
-                bundle1.putString("Uri", list[position].uri)
-                bundle1.putInt("type", type)
-                bundle1.putInt("action", action)
-                bundle1.putInt("currentTime", currentTime)
-                bundle1.putBoolean("checked", check)
-                bundle1.putBoolean("activity", true)
-                bundle1.putInt("timer", timer)
-                var checkTimer = false
-                if (timer != 0)
-                    checkTimer = true
-                bundle1.putBoolean("checkTimer", checkTimer)
-                intent.putExtras(bundle1)
-                startActivity(intent)
-                overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
+                backToMain()
             } else {
                 finish()
                 overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
@@ -234,8 +259,7 @@ class PlayActivity : AppCompatActivity() {
 
             override fun onStopTrackingTouch(p0: SeekBar?) {
                 p0?.progress?.let {
-                    currentTime = it
-                    connectService(ACTION_PLAY_SONG)
+                    mySerVice.mediaPlayer.seekTo(it)
                 }
             }
 
@@ -256,18 +280,21 @@ class PlayActivity : AppCompatActivity() {
             minute15.setOnClickListener {
                 timer = 15
                 btnClock.alpha = 1F
+                getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit().putInt("timer",timer).apply()
                 connectService(ACTION_TIMER)
                 bottom.dismiss()
             }
             minute30.setOnClickListener {
                 timer = 30
                 btnClock.alpha = 1F
+                getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit().putInt("timer",timer).apply()
                 connectService(ACTION_TIMER)
                 bottom.dismiss()
             }
             hour.setOnClickListener {
                 timer = 60
                 btnClock.alpha = 1F
+                getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit().putInt("timer",timer).apply()
                 connectService(ACTION_TIMER)
                 bottom.dismiss()
             }
@@ -296,15 +323,18 @@ class PlayActivity : AppCompatActivity() {
                         }
                         if (timer != 0)
                             btnClock.alpha = 1F
+                        getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit().putInt("timer",timer).apply()
                         connectService(ACTION_TIMER)
                     }
                 } else {
                     timer = 0
                     btnClock.alpha = 0.5F
+                    getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit().putInt("timer",timer).apply()
                     connectService(ACTION_TIMER)
                 }
                 bottom.dismiss()
             }
+
             bottom.show()
             if (timer == 0) {
                 btnClock.alpha = 0.5F
@@ -318,6 +348,25 @@ class PlayActivity : AppCompatActivity() {
                     nameTimer.text = "Hẹn giờ ( $timer phút )"
             }
         }
+    }
+
+    private fun backToMain() {
+        val intent = Intent(this, MainActivity::class.java)
+        val bundle1 = Bundle()
+        bundle1.putString("Uri", list[position].uri)
+        bundle1.putInt("type", type)
+        bundle1.putInt("action", action)
+        bundle1.putInt("currentTime", currentTime)
+        bundle1.putBoolean("checked", check)
+        bundle1.putBoolean("activity", true)
+        bundle1.putInt("timer", timer)
+        var checkTimer = false
+        if (timer != 0)
+            checkTimer = true
+        bundle1.putBoolean("checkTimer", checkTimer)
+        intent.putExtras(bundle1)
+        startActivity(intent)
+        overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
     }
 
     fun updateUI() {
@@ -344,10 +393,9 @@ class PlayActivity : AppCompatActivity() {
         seekBar.max = list[position].duration
     }
 
-    fun connectService(ac: Int) {
+    private fun connectService(ac: Int) {
         val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
-        bundle.putInt("timer", timer)
         var checkTimer = false
         if (timer != 0)
             checkTimer = true
@@ -371,9 +419,15 @@ class PlayActivity : AppCompatActivity() {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        unbindService(connection)
+        bound = false
+        handler.removeCallbacks(run)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPosition)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPodcast)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPlay)
     }
