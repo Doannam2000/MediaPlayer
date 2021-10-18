@@ -1,4 +1,4 @@
-package dd.wan.ddwanmediaplayer
+package dd.wan.ddwanmediaplayer.activities
 
 import android.app.ActivityManager
 import android.content.BroadcastReceiver
@@ -16,17 +16,19 @@ import android.widget.TextView
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import dd.wan.ddwanmediaplayer.MyApplication
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_NEXT_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PLAY_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PREVIOUS_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_STOP_SONG
 import dd.wan.ddwanmediaplayer.adapter.RecyclerAdapter
-import dd.wan.ddwanmediaplayer.model.Podcast
+import dd.wan.ddwanmediaplayer.model.offline.Podcast
 import dd.wan.ddwanmediaplayer.service.Broadcast
 import dd.wan.ddwanmediaplayer.service.MyService
 import kotlinx.android.synthetic.main.activity_main.*
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
-import kotlinx.android.synthetic.main.activity_play.*
+import dd.wan.ddwanmediaplayer.R
 import java.lang.Exception
 
 class MainActivity : AppCompatActivity() {
@@ -36,8 +38,10 @@ class MainActivity : AppCompatActivity() {
     var listP = ArrayList<Podcast>()
     lateinit var adapter: RecyclerAdapter
     var timer = 0
-    var checkTimer = false
     var activity = false
+    var checkTimer = false
+
+
 
     val handle = Handler()
     val run = Runnable {
@@ -85,15 +89,20 @@ class MainActivity : AppCompatActivity() {
         val searchView: TextView = findViewById(R.id.searchView)
         val recyclerView: RecyclerView = findViewById(R.id.list_Podcast)
 
-        timer = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).getInt("timer", 0)
+        val shared = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
+        timer = shared.getInt("timer", 0)
         val uri =
-            getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).getString("Uri", "")
-        if (uri != "") {
+            shared.getString("Uri", "")
+        if (uri != "" && uri!!.contains("/")) {
             for (i in list.indices) {
                 if (list[i].uri == uri)
                     position = i
             }
             updateUI()
+        }else if(uri!="" && !uri.contains("/")) {
+            nameSong.text = shared.getString("nameSong","Tên bài hát")
+            nameAuth.text = shared.getString("artists_names","Tên ca sĩ")
+            Glide.with(applicationContext).load(shared.getString("thumbnail","")).into(imageP)
         }
         if (list.size != 0) {
             val bundle = intent.extras
@@ -131,14 +140,11 @@ class MainActivity : AppCompatActivity() {
             bundle1.putString("Uri", podcast.uri)
             bundle1.putInt("currentTime", 0)
             bundle1.putInt("action", 0)
+            bundle1.putBoolean("online", false)
             bundle1.putBoolean("activity", true)
             bundle1.putInt("timer", timer)
-            var checkTimer = false
 
             updateUI()
-            if (timer != 0)
-                checkTimer = true
-            bundle1.putBoolean("checkTimer", checkTimer)
 
             val intent11 = Intent(this, MyService::class.java)
             intent11.putExtras(bundle1)
@@ -183,7 +189,7 @@ class MainActivity : AppCompatActivity() {
                 val bundle1 = Bundle()
                 bundle1.putString("Uri", podcast.uri)
                 bundle1.putInt("currentTime", 0)
-                bundle1.putInt("action", 0)
+                bundle1.putInt("action", currentTime)
                 bundle1.putBoolean("activity", true)
                 bundle1.putInt("timer", timer)
                 var checkTimer = false
@@ -221,17 +227,13 @@ class MainActivity : AppCompatActivity() {
         } else {
             imageP.setImageResource(R.drawable.music_icon)
         }
-
     }
 
     private fun connectService(ac: Int) {
         val bundle = Bundle()
         bundle.putString("Uri", list[position].uri)
-        var checkTimer = false
-        if (timer != 0)
-            checkTimer = true
-        bundle.putBoolean("checkTimer", checkTimer)
         bundle.putInt("currentTime", currentTime)
+        bundle.putBoolean("online", false)
         if (isMyServiceRunning(MyService::class.java)) {
             bundle.putInt("action", ac)
             val intent = Intent(this, Broadcast::class.java)

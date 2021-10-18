@@ -4,8 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".PlayActivity"
-    android:background="@drawable/gradient">
+    android:background="@drawable/gradient"
+    tools:context=".activities.PlayActivity">
+
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline2"
         android:layout_width="wrap_content"
@@ -53,30 +54,33 @@
         app:layout_constraintBottom_toBottomOf="@+id/previous"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/previous" />
+
     <androidx.cardview.widget.CardView
         android:id="@+id/cardView"
-        app:cardCornerRadius="150dp"
-        android:backgroundTint="@android:color/transparent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:backgroundTint="@android:color/transparent"
+        app:cardCornerRadius="150dp"
         app:layout_constraintBottom_toTopOf="@+id/guideline2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
-    <ImageView
-        android:interpolator="@anim/anim_rotate"
-        android:id="@+id/imageView"
-        android:scaleType="fitEnd"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
-        android:src="@drawable/music_icon" />
+
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="300dp"
+            android:layout_height="300dp"
+            android:interpolator="@anim/anim_rotate"
+            android:scaleType="fitEnd"
+            android:src="@drawable/music_icon" />
     </androidx.cardview.widget.CardView>
+
     <TextView
         android:id="@+id/name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Tên bài hát\n\nTên tác giả"
         android:gravity="center"
+        android:text="Tên bài hát\n\nTên tác giả"
         android:textColor="#F1F2F7"
         app:layout_constraintBottom_toTopOf="@+id/guideline2"
         app:layout_constraintEnd_toEndOf="@+id/cardView"
@@ -116,42 +120,59 @@
         app:layout_constraintTop_toBottomOf="@+id/time1"
         app:layout_constraintVertical_bias="0.2" />
 
-    <ImageView
-        android:id="@+id/btnRepeat"
-        android:layout_width="50dp"
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:padding="10dp"
-        android:src="@drawable/repeat_all"
         app:layout_constraintBottom_toTopOf="@+id/linearLayoutCompat"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.945"
-        app:layout_constraintStart_toEndOf="@+id/btnShuffle"
-        app:layout_constraintTop_toBottomOf="@+id/seekBar" />
+        app:layout_constraintTop_toBottomOf="@+id/seekBar">
 
-    <ImageView
-        android:id="@+id/btnClock"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:alpha="0.5"
-        android:padding="10dp"
-        android:src="@drawable/clock"
-        app:layout_constraintBottom_toBottomOf="@+id/btnShuffle"
-        app:layout_constraintEnd_toStartOf="@+id/btnRepeat"
-        app:layout_constraintStart_toEndOf="@+id/btnShuffle"
-        app:layout_constraintTop_toTopOf="@+id/btnShuffle" />
 
-    <ImageView
-        android:id="@+id/btnShuffle"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:alpha="0.5"
-        android:padding="15dp"
-        android:src="@drawable/shuffle"
-        app:layout_constraintBottom_toTopOf="@+id/linearLayoutCompat"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.045"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/seekBar" />
+        <ImageView
+            android:id="@+id/btnShuffle"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:alpha="0.5"
+            android:padding="15dp"
+            android:src="@drawable/shuffle" />
+
+
+        <ImageView
+            android:id="@+id/btnFav"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:padding="10dp"
+            android:alpha="0.5"
+            android:src="@drawable/ic_baseline_favorite_24" />
+
+        <ImageView
+            android:id="@+id/btnClock"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:alpha="0.5"
+            android:padding="10dp"
+            android:src="@drawable/clock" />
+
+        <ImageView
+            android:id="@+id/btnList"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:alpha="0.5"
+            android:padding="10dp"
+            android:src="@drawable/ic_baseline_playlist_play_24" />
+        <ImageView
+            android:id="@+id/btnRepeat"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:padding="10dp"
+            android:src="@drawable/repeat_all" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:id="@+id/linearLayoutCompat"
@@ -187,7 +208,7 @@
             android:layout_marginLeft="15dp"
             android:layout_marginRight="15dp"
             android:layout_weight="1"
-            android:src="@drawable/ic_outline_play_arrow_24" />
+            android:src="@drawable/ic_baseline_pause_24" />
 
         <ImageView
             android:id="@+id/btnForward"

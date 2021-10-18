@@ -3,9 +3,9 @@ package dd.wan.ddwanmediaplayer
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.Context
 import android.os.Build
-import dd.wan.ddwanmediaplayer.model.Podcast
+import dd.wan.ddwanmediaplayer.model.offline.Podcast
+import dd.wan.ddwanmediaplayer.model.top.Song
 
 class MyApplication : Application() {
 
@@ -20,6 +20,7 @@ class MyApplication : Application() {
         const val ACTION_REPEAT_THIS_SONG = 1
         const val ACTION_NOT_REPEAT = 2
         const val ACTION_CHECK = 6
+        const val ACTION_CHANGE = 7
         var list = ArrayList<Podcast>()
     }
 

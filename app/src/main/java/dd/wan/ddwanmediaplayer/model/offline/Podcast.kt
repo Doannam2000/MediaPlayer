@@ -1,4 +1,4 @@
-package dd.wan.ddwanmediaplayer.model
+package dd.wan.ddwanmediaplayer.model.offline
 
 import java.io.Serializable
 

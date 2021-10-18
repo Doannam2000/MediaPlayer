@@ -1,4 +1,4 @@
-package dd.wan.ddwanmediaplayer
+package dd.wan.ddwanmediaplayer.activities
 
 import android.Manifest
 import android.content.Intent
@@ -6,16 +6,16 @@ import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
-import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
-import dd.wan.ddwanmediaplayer.model.ReadPodcast
+import dd.wan.ddwanmediaplayer.R
+import dd.wan.ddwanmediaplayer.model.offline.ReadPodcast
 import kotlin.system.exitProcess
 
-class HelloActivity : AppCompatActivity() {
+class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_hello)
+        setContentView(R.layout.activity_splash)
         requestPermission()
     }
 
@@ -33,7 +33,7 @@ class HelloActivity : AppCompatActivity() {
                             MainActivity::class.java
                         )
                     )
-                    overridePendingTransition(R.anim.right_to_left,R.anim.right_to_left_out)
+                    overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
                     finish()
                 }, 1500)
             } else {
@@ -66,7 +66,7 @@ class HelloActivity : AppCompatActivity() {
                         MainActivity::class.java
                     )
                 )
-                overridePendingTransition(R.anim.right_to_left,R.anim.right_to_left_out)
+                overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
                 finish()
             }, 1500)
         }

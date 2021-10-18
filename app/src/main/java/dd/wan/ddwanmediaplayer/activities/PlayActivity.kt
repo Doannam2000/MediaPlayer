@@ -1,4 +1,4 @@
-package dd.wan.ddwanmediaplayer
+package dd.wan.ddwanmediaplayer.activities
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
@@ -26,8 +26,12 @@ import dd.wan.ddwanmediaplayer.service.Broadcast
 import kotlinx.android.synthetic.main.custom_editext_dialog.view.*
 import android.app.ActivityManager
 import android.content.*
+import android.media.MediaPlayer
 import android.os.Handler
 import android.os.IBinder
+import com.bumptech.glide.Glide
+import dd.wan.ddwanmediaplayer.R
+import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.MyService
 
 
@@ -38,9 +42,11 @@ class PlayActivity : AppCompatActivity() {
     private var position = 0
     private var currentTime = 0
     var action = 0
-    var check = true
+    var check = false
     var timer = 0
     var activity = false
+    var online = false
+    var listRecommendMusic = ArrayList<Song>()
 
     @SuppressLint("SimpleDateFormat")
     val sdf = SimpleDateFormat("mm:ss")
@@ -51,6 +57,7 @@ class PlayActivity : AppCompatActivity() {
     var handler = Handler()
     var run = object : Runnable {
         override fun run() {
+            currentTime = mySerVice.mediaPlayer.currentPosition
             seekBar.progress = mySerVice.mediaPlayer.currentPosition
             time1.text = sdf.format(mySerVice.mediaPlayer.currentPosition)
             handler.postDelayed(this, 500)
@@ -75,6 +82,10 @@ class PlayActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         bindService(Intent(this, MyService::class.java), connection, Context.BIND_AUTO_CREATE)
+        if (this::mySerVice.isInitialized) {
+            time2.text = sdf.format(mySerVice.mediaPlayer.duration)
+            seekBar.max = mySerVice.mediaPlayer.duration
+        }
     }
 
     private val broadcastPodcast = object : BroadcastReceiver() {
@@ -87,10 +98,19 @@ class PlayActivity : AppCompatActivity() {
                 seekBar.progress = currentTime
                 type = bundle.getInt("type")
                 action = bundle.getInt("action")
-                val uri = bundle.getString("Uri") as String
-                for (i in 0 until list.size) {
-                    if (list[i].uri == uri)
-                        position = i
+                online = bundle.getBoolean("online")
+                if (online) {
+                    val song = bundle.getSerializable("Song") as Song
+                    for (i in 0 until listRecommendMusic.size) {
+                        if (listRecommendMusic[i].id == song.id)
+                            position = i
+                    }
+                } else {
+                    val uri = bundle.getString("Uri")
+                    for (i in 0 until list.size) {
+                        if (list[i].uri == uri)
+                            position = i
+                    }
                 }
                 updateUI()
                 time1.text = sdf.format(currentTime)
@@ -110,13 +130,11 @@ class PlayActivity : AppCompatActivity() {
                 btnClock.alpha = 1F
             else
                 btnClock.alpha = 0.5F
-            if(p1.extras!!.getBoolean("exit"))
-            {
-                if(!activity) {
+            if (p1.extras!!.getBoolean("exit")) {
+                if (!activity) {
                     backToMain()
                     finish()
-                }
-                else{
+                } else {
                     finish()
                     overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
                 }
@@ -125,26 +143,32 @@ class PlayActivity : AppCompatActivity() {
     }
 
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_play)
         val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
         val edit = sharedPreferences.edit()
-        timer = sharedPreferences.getInt("timer",0)
+        timer = sharedPreferences.getInt("timer", 0)
         type = sharedPreferences.getInt("type", 0)
         shuffle = sharedPreferences.getBoolean("shuffle", false)
 
         val bundle = intent.extras
         currentTime = bundle!!.getInt("currentTime")
-        check = bundle.getBoolean("checked",true)
-
-
+        check = bundle.getBoolean("checked", true)
+        online = bundle.getBoolean("online")
         activity = bundle.getBoolean("activity")
         val uri = bundle.getString("Uri")
-        for (i in 0 until list.size) {
-            if (list[i].uri == uri)
-                position = i
+        if (online) {
+            listRecommendMusic = bundle.getSerializable("listRecommendMusic") as ArrayList<Song>
+            for (i in listRecommendMusic.indices) {
+                if (listRecommendMusic[i].id == uri)
+                    position = i
+            }
+        } else {
+            for (i in 0 until list.size) {
+                if (list[i].uri == uri)
+                    position = i
+            }
         }
         imageView.animation = AnimationUtils.loadAnimation(this, R.anim.anim_rotate)
 
@@ -152,9 +176,6 @@ class PlayActivity : AppCompatActivity() {
             btnClock.alpha = 1F
         else
             btnClock.alpha = 0.5F
-
-
-
 
         when (type) {
             ACTION_REPEAT_ALL -> btnRepeat.setImageResource(R.drawable.repeat_all)
@@ -165,6 +186,7 @@ class PlayActivity : AppCompatActivity() {
                 btnRepeat.setImageResource(R.drawable.repeat)
             }
         }
+
         if (shuffle)
             btnShuffle.alpha = 1F
         else
@@ -174,26 +196,41 @@ class PlayActivity : AppCompatActivity() {
             .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
-
-        updateUI()
         seekBar.progress = currentTime
 
         btnPlay.setOnClickListener {
-            mySerVice.playOr()
+            if(mySerVice.mediaPlayer != MediaPlayer())
+                mySerVice.playOr()
+            else
+                mySerVice.play()
         }
 
         btnBack.setOnClickListener {
-            if (mySerVice.arrayPlayed.size == list.size) {
-                mySerVice.arrayPlayed.clear()
+            if (online) {
+                if (mySerVice.arrayPlayed.size == list.size) {
+                    mySerVice.arrayPlayed.clear()
+                }
+            } else {
+                if (mySerVice.arrayPlayed.size == list.size) {
+                    mySerVice.arrayPlayed.clear()
+                }
             }
             mySerVice.previous()
         }
 
         btnNext.setOnClickListener {
-            if (mySerVice.arrayPlayed.size == list.size) {
-                mySerVice.arrayPlayed.clear()
+
+            if (online) {
+                if (mySerVice.arrayPlayed.size == list.size) {
+                    mySerVice.arrayPlayed.clear()
+                }
+            } else {
+                if (mySerVice.arrayPlayed.size == list.size) {
+                    mySerVice.arrayPlayed.clear()
+                }
             }
             mySerVice.nextSong()
+
         }
 
         btnRepeat.setOnClickListener {
@@ -236,10 +273,17 @@ class PlayActivity : AppCompatActivity() {
             }
         }
         btnForward.setOnClickListener {
-            if (currentTime + 10000 < list[position].duration) {
+            var duration =
+                if (online)
+                    listRecommendMusic[position].duration * 1000
+                else
+                    list[position].duration
+            if (currentTime + 10000 < duration) {
                 seekBar.progress = currentTime + 10000
                 currentTime += 10000
+
                 mySerVice.mediaPlayer.seekTo(currentTime)
+
             }
         }
         previous.setOnClickListener {
@@ -264,7 +308,7 @@ class PlayActivity : AppCompatActivity() {
             }
 
         })
-
+        updateUI()
         btnClock.setOnClickListener {
             val bottom = BottomSheetDialog(this, R.style.bottomSheetDialog)
             bottom.setContentView(R.layout.custom_bottom_sheet)
@@ -280,21 +324,24 @@ class PlayActivity : AppCompatActivity() {
             minute15.setOnClickListener {
                 timer = 15
                 btnClock.alpha = 1F
-                getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit().putInt("timer",timer).apply()
+                getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit()
+                    .putInt("timer", timer).apply()
                 connectService(ACTION_TIMER)
                 bottom.dismiss()
             }
             minute30.setOnClickListener {
                 timer = 30
                 btnClock.alpha = 1F
-                getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit().putInt("timer",timer).apply()
+                getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit()
+                    .putInt("timer", timer).apply()
                 connectService(ACTION_TIMER)
                 bottom.dismiss()
             }
             hour.setOnClickListener {
                 timer = 60
                 btnClock.alpha = 1F
-                getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit().putInt("timer",timer).apply()
+                getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit()
+                    .putInt("timer", timer).apply()
                 connectService(ACTION_TIMER)
                 bottom.dismiss()
             }
@@ -323,13 +370,15 @@ class PlayActivity : AppCompatActivity() {
                         }
                         if (timer != 0)
                             btnClock.alpha = 1F
-                        getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit().putInt("timer",timer).apply()
+                        getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit()
+                            .putInt("timer", timer).apply()
                         connectService(ACTION_TIMER)
                     }
                 } else {
                     timer = 0
                     btnClock.alpha = 0.5F
-                    getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit().putInt("timer",timer).apply()
+                    getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit()
+                        .putInt("timer", timer).apply()
                     connectService(ACTION_TIMER)
                 }
                 bottom.dismiss()
@@ -351,69 +400,76 @@ class PlayActivity : AppCompatActivity() {
     }
 
     private fun backToMain() {
-        val intent = Intent(this, MainActivity::class.java)
         val bundle1 = Bundle()
-        bundle1.putString("Uri", list[position].uri)
-        bundle1.putInt("type", type)
+        var intent = Intent(this, MainActivity::class.java)
+        if (online) {
+            intent = Intent(this, MusicOnlineActivity::class.java)
+            bundle1.putSerializable("Song", listRecommendMusic[position])
+        } else {
+            bundle1.putString("Uri", list[position].uri)
+        }
         bundle1.putInt("action", action)
         bundle1.putInt("currentTime", currentTime)
         bundle1.putBoolean("checked", check)
         bundle1.putBoolean("activity", true)
-        bundle1.putInt("timer", timer)
-        var checkTimer = false
-        if (timer != 0)
-            checkTimer = true
-        bundle1.putBoolean("checkTimer", checkTimer)
         intent.putExtras(bundle1)
         startActivity(intent)
         overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
     }
 
     fun updateUI() {
-        if (list[position].image.isNotEmpty()) {
-            try{
-                val image = list[position].image
-                imageView.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
-            }catch (e:Exception)
-            {
+        if (online) {
+            time1.text = sdf.format(currentTime)
+            name1.text = listRecommendMusic[position].name
+            name.text = listRecommendMusic[position].name + "\n\n" + listRecommendMusic[position].artists_names
+            Glide.with(this).load(listRecommendMusic[position].thumbnail).into(imageView)
+            time2.text = sdf.format(listRecommendMusic[position].duration * 1000)
+            seekBar.max = listRecommendMusic[position].duration * 1000
+        } else {
+            if (list[position].image.isNotEmpty()) {
+                try {
+                    val image = list[position].image
+                    imageView.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+                } catch (e: Exception) {
+                    imageView.setImageResource(R.drawable.music_icon)
+                }
+            } else {
                 imageView.setImageResource(R.drawable.music_icon)
             }
-        } else {
-            imageView.setImageResource(R.drawable.music_icon)
+            time1.text = sdf.format(currentTime)
+            name1.text = list[position].title
+            val string = "${list[position].title} \n\n ${list[position].artist}"
+            name.text = string
+            time2.text = sdf.format(list[position].duration)
+            seekBar.max = list[position].duration
         }
-        time1.text = sdf.format(currentTime)
-        name1.text = list[position].title
-        val string = "${list[position].title} \n\n ${list[position].artist}"
-        name.text = string
-        if (check)
+        if (check || this::mySerVice.isInitialized && mySerVice.mediaPlayer.isPlaying)
             btnPlay.setImageResource(R.drawable.ic_baseline_pause_24)
         else
             btnPlay.setImageResource(R.drawable.ic_outline_play_arrow_24)
-        time2.text = sdf.format(list[position].duration)
-        seekBar.max = list[position].duration
     }
 
     private fun connectService(ac: Int) {
         val bundle = Bundle()
-        bundle.putString("Uri", list[position].uri)
-        var checkTimer = false
-        if (timer != 0)
-            checkTimer = true
-        bundle.putBoolean("checkTimer", checkTimer)
+        bundle.putBoolean("online", online)
+        if (online) {
+            bundle.putSerializable("listRecommendMusic", listRecommendMusic)
+            bundle.putString("Uri", listRecommendMusic[position].id)
+        } else {
+            bundle.putString("Uri", list[position].uri)
+        }
         bundle.putInt("currentTime", currentTime)
-        if(isMyServiceRunning(MyService::class.java))
-        {
+        if (isMyServiceRunning(MyService::class.java)) {
             bundle.putInt("action", ac)
             val intent = Intent(this, Broadcast::class.java)
             intent.putExtras(bundle)
             sendBroadcast(intent)
-        }
-        else{
-            if(ac == ACTION_PAUSE_OR_PLAY)
+        } else {
+            if (ac == ACTION_PAUSE_OR_PLAY)
                 bundle.putInt("action", ACTION_PLAY_SONG)
             else
                 bundle.putInt("action", ac)
-            val intent = Intent(this,MyService::class.java)
+            val intent = Intent(this, MyService::class.java)
             intent.putExtras(bundle)
             startService(intent)
         }
@@ -431,6 +487,7 @@ class PlayActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPodcast)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPlay)
     }
+
     private fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
         val manager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
         for (service in manager.getRunningServices(Int.MAX_VALUE)) {
