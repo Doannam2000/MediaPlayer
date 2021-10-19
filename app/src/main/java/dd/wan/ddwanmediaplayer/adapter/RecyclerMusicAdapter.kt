@@ -1,6 +1,5 @@
 package dd.wan.ddwanmediaplayer.adapter
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
@@ -11,8 +10,8 @@ import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import dd.wan.ddwanmediaplayer.R
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.sdf
 import dd.wan.ddwanmediaplayer.model.top.Song
-import java.text.SimpleDateFormat
 
 class RecyclerMusicAdapter(var listSong:ArrayList<Song>):RecyclerView.Adapter<RecyclerMusicAdapter.ViewHolder>() {
 
@@ -45,9 +44,9 @@ class RecyclerMusicAdapter(var listSong:ArrayList<Song>):RecyclerView.Adapter<Re
         var layout: CardView = itemView.findViewById(R.id.layout)
         var time:TextView = itemView.findViewById(R.id.time)
         var imagePodcast: ImageView = itemView.findViewById(R.id.imagePodcast)
-        @SuppressLint("SimpleDateFormat")
+
         fun setData() {
-            time.text = SimpleDateFormat("mm:ss").format(listSong[adapterPosition].duration*1000)
+            time.text = sdf.format(listSong[adapterPosition].duration*1000)
             name.text = listSong[adapterPosition].name
             artists_names.text = listSong[adapterPosition].artists_names
             Glide.with(context)

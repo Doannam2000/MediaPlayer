@@ -2,6 +2,7 @@ package dd.wan.ddwanmediaplayer.model.top
 
 import java.io.Serializable
 
+
 data class Song(
     var album: Album,
     var artist: ArtistX,

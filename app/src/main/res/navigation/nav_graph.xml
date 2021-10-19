@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/onlineFragment">
+
+    <fragment
+        android:id="@+id/onlineFragment"
+        android:name="dd.wan.ddwanmediaplayer.fragment.OnlineFragment"
+        android:label="fragment_online"
+        tools:layout="@layout/fragment_online" />
+    <fragment
+        android:id="@+id/offlineFragment"
+        android:name="dd.wan.ddwanmediaplayer.fragment.OfflineFragment"
+        android:label="fragment_offline"
+        tools:layout="@layout/fragment_offline" />
+    <fragment
+        android:id="@+id/favoriteFragment"
+        android:name="dd.wan.ddwanmediaplayer.fragment.FavoriteFragment"
+        android:label="fragment_favorite"
+        tools:layout="@layout/fragment_favorite" />
+</navigation>

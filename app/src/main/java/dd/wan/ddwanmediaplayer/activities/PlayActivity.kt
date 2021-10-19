@@ -1,6 +1,5 @@
 package dd.wan.ddwanmediaplayer.activities
 
-import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
@@ -11,26 +10,33 @@ import android.widget.TextView
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.android.synthetic.main.activity_play.*
-import java.text.SimpleDateFormat
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.View
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_NOT_REPEAT
-import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PAUSE_OR_PLAY
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PLAY_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_ALL
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_REPEAT_THIS_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_TIMER
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
-import dd.wan.ddwanmediaplayer.service.Broadcast
 import kotlinx.android.synthetic.main.custom_editext_dialog.view.*
-import android.app.ActivityManager
 import android.content.*
 import android.media.MediaPlayer
 import android.os.Handler
 import android.os.IBinder
+import android.util.Log
 import com.bumptech.glide.Glide
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PAUSE_OR_PLAY
 import dd.wan.ddwanmediaplayer.R
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.online
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.check
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.position
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.activity
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.connectService
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.timer
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.sdf
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.currentTime
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.listRecommendMusic
 import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.MyService
 
@@ -39,31 +45,20 @@ class PlayActivity : AppCompatActivity() {
 
     private var type = 0
     var shuffle = false
-    private var position = 0
-    private var currentTime = 0
-    var action = 0
-    var check = false
-    var timer = 0
-    var activity = false
-    var online = false
-    var listRecommendMusic = ArrayList<Song>()
-
-    @SuppressLint("SimpleDateFormat")
-    val sdf = SimpleDateFormat("mm:ss")
-
+    var action = ACTION_PLAY_SONG
     lateinit var mySerVice: MyService
     var bound = false
-
     var handler = Handler()
     var run = object : Runnable {
         override fun run() {
-            currentTime = mySerVice.mediaPlayer.currentPosition
-            seekBar.progress = mySerVice.mediaPlayer.currentPosition
-            time1.text = sdf.format(mySerVice.mediaPlayer.currentPosition)
+            if (mySerVice.mediaPlayer.isPlaying) {
+                currentTime = mySerVice.mediaPlayer.currentPosition
+                seekBar.progress = mySerVice.mediaPlayer.currentPosition
+                time1.text = sdf.format(mySerVice.mediaPlayer.currentPosition)
+            }
             handler.postDelayed(this, 500)
         }
     }
-
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
@@ -94,11 +89,9 @@ class PlayActivity : AppCompatActivity() {
             if (bundle == null)
                 return
             else {
-                currentTime = bundle.getInt("currentTime")
                 seekBar.progress = currentTime
                 type = bundle.getInt("type")
                 action = bundle.getInt("action")
-                online = bundle.getBoolean("online")
                 if (online) {
                     val song = bundle.getSerializable("Song") as Song
                     for (i in 0 until listRecommendMusic.size) {
@@ -132,7 +125,8 @@ class PlayActivity : AppCompatActivity() {
                 btnClock.alpha = 0.5F
             if (p1.extras!!.getBoolean("exit")) {
                 if (!activity) {
-                    backToMain()
+                    startActivity(Intent(p0, MusicOnlineActivity::class.java))
+                    overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
                     finish()
                 } else {
                     finish()
@@ -152,24 +146,7 @@ class PlayActivity : AppCompatActivity() {
         type = sharedPreferences.getInt("type", 0)
         shuffle = sharedPreferences.getBoolean("shuffle", false)
 
-        val bundle = intent.extras
-        currentTime = bundle!!.getInt("currentTime")
-        check = bundle.getBoolean("checked", true)
-        online = bundle.getBoolean("online")
-        activity = bundle.getBoolean("activity")
-        val uri = bundle.getString("Uri")
-        if (online) {
-            listRecommendMusic = bundle.getSerializable("listRecommendMusic") as ArrayList<Song>
-            for (i in listRecommendMusic.indices) {
-                if (listRecommendMusic[i].id == uri)
-                    position = i
-            }
-        } else {
-            for (i in 0 until list.size) {
-                if (list[i].uri == uri)
-                    position = i
-            }
-        }
+
         imageView.animation = AnimationUtils.loadAnimation(this, R.anim.anim_rotate)
 
         if (timer != 0)
@@ -186,7 +163,6 @@ class PlayActivity : AppCompatActivity() {
                 btnRepeat.setImageResource(R.drawable.repeat)
             }
         }
-
         if (shuffle)
             btnShuffle.alpha = 1F
         else
@@ -199,15 +175,12 @@ class PlayActivity : AppCompatActivity() {
         seekBar.progress = currentTime
 
         btnPlay.setOnClickListener {
-            if(mySerVice.mediaPlayer != MediaPlayer())
-                mySerVice.playOr()
-            else
-                mySerVice.play()
+            mySerVice.playOr()
         }
 
         btnBack.setOnClickListener {
             if (online) {
-                if (mySerVice.arrayPlayed.size == list.size) {
+                if (mySerVice.arrayPlayed.size == listRecommendMusic.size) {
                     mySerVice.arrayPlayed.clear()
                 }
             } else {
@@ -219,9 +192,8 @@ class PlayActivity : AppCompatActivity() {
         }
 
         btnNext.setOnClickListener {
-
             if (online) {
-                if (mySerVice.arrayPlayed.size == list.size) {
+                if (mySerVice.arrayPlayed.size == listRecommendMusic.size) {
                     mySerVice.arrayPlayed.clear()
                 }
             } else {
@@ -287,11 +259,14 @@ class PlayActivity : AppCompatActivity() {
             }
         }
         previous.setOnClickListener {
-            if (!activity) {
-                backToMain()
-            } else {
+            activity = if (activity) {
                 finish()
                 overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
+                false
+            } else {
+                startActivity(Intent(this, MusicOnlineActivity::class.java))
+                overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
+                true
             }
         }
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -326,7 +301,7 @@ class PlayActivity : AppCompatActivity() {
                 btnClock.alpha = 1F
                 getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit()
                     .putInt("timer", timer).apply()
-                connectService(ACTION_TIMER)
+                connectService(ACTION_TIMER, this)
                 bottom.dismiss()
             }
             minute30.setOnClickListener {
@@ -334,7 +309,7 @@ class PlayActivity : AppCompatActivity() {
                 btnClock.alpha = 1F
                 getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit()
                     .putInt("timer", timer).apply()
-                connectService(ACTION_TIMER)
+                connectService(ACTION_TIMER, this)
                 bottom.dismiss()
             }
             hour.setOnClickListener {
@@ -342,7 +317,7 @@ class PlayActivity : AppCompatActivity() {
                 btnClock.alpha = 1F
                 getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit()
                     .putInt("timer", timer).apply()
-                connectService(ACTION_TIMER)
+                connectService(ACTION_TIMER, this)
                 bottom.dismiss()
             }
             cancel.setOnClickListener {
@@ -372,14 +347,14 @@ class PlayActivity : AppCompatActivity() {
                             btnClock.alpha = 1F
                         getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit()
                             .putInt("timer", timer).apply()
-                        connectService(ACTION_TIMER)
+                        connectService(ACTION_TIMER, this)
                     }
                 } else {
                     timer = 0
                     btnClock.alpha = 0.5F
                     getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).edit()
                         .putInt("timer", timer).apply()
-                    connectService(ACTION_TIMER)
+                    connectService(ACTION_TIMER, this)
                 }
                 bottom.dismiss()
             }
@@ -399,30 +374,16 @@ class PlayActivity : AppCompatActivity() {
         }
     }
 
-    private fun backToMain() {
-        val bundle1 = Bundle()
-        var intent = Intent(this, MainActivity::class.java)
-        if (online) {
-            intent = Intent(this, MusicOnlineActivity::class.java)
-            bundle1.putSerializable("Song", listRecommendMusic[position])
-        } else {
-            bundle1.putString("Uri", list[position].uri)
-        }
-        bundle1.putInt("action", action)
-        bundle1.putInt("currentTime", currentTime)
-        bundle1.putBoolean("checked", check)
-        bundle1.putBoolean("activity", true)
-        intent.putExtras(bundle1)
-        startActivity(intent)
-        overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
-    }
+
 
     fun updateUI() {
         if (online) {
             time1.text = sdf.format(currentTime)
             name1.text = listRecommendMusic[position].name
-            name.text = listRecommendMusic[position].name + "\n\n" + listRecommendMusic[position].artists_names
-            Glide.with(this).load(listRecommendMusic[position].thumbnail).into(imageView)
+            name.text =
+                listRecommendMusic[position].name + "\n\n" + listRecommendMusic[position].artists_names
+            var linkImg  = listRecommendMusic[position].thumbnail.removeRange(34,48)
+            Glide.with(this).load(linkImg).into(imageView)
             time2.text = sdf.format(listRecommendMusic[position].duration * 1000)
             seekBar.max = listRecommendMusic[position].duration * 1000
         } else {
@@ -449,31 +410,6 @@ class PlayActivity : AppCompatActivity() {
             btnPlay.setImageResource(R.drawable.ic_outline_play_arrow_24)
     }
 
-    private fun connectService(ac: Int) {
-        val bundle = Bundle()
-        bundle.putBoolean("online", online)
-        if (online) {
-            bundle.putSerializable("listRecommendMusic", listRecommendMusic)
-            bundle.putString("Uri", listRecommendMusic[position].id)
-        } else {
-            bundle.putString("Uri", list[position].uri)
-        }
-        bundle.putInt("currentTime", currentTime)
-        if (isMyServiceRunning(MyService::class.java)) {
-            bundle.putInt("action", ac)
-            val intent = Intent(this, Broadcast::class.java)
-            intent.putExtras(bundle)
-            sendBroadcast(intent)
-        } else {
-            if (ac == ACTION_PAUSE_OR_PLAY)
-                bundle.putInt("action", ACTION_PLAY_SONG)
-            else
-                bundle.putInt("action", ac)
-            val intent = Intent(this, MyService::class.java)
-            intent.putExtras(bundle)
-            startService(intent)
-        }
-    }
 
     override fun onStop() {
         super.onStop()
@@ -484,17 +420,10 @@ class PlayActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        activity = false
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPodcast)
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPlay)
     }
 
-    private fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
-        val manager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
-        for (service in manager.getRunningServices(Int.MAX_VALUE)) {
-            if (serviceClass.name == service.service.className) {
-                return true
-            }
-        }
-        return false
-    }
+
 }

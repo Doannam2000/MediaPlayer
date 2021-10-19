@@ -30,7 +30,7 @@ class SplashActivity : AppCompatActivity() {
                     startActivity(
                         Intent(
                             this,
-                            MainActivity::class.java
+                            MusicOnlineActivity::class.java
                         )
                     )
                     overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
@@ -63,7 +63,7 @@ class SplashActivity : AppCompatActivity() {
                 startActivity(
                     Intent(
                         this,
-                        MainActivity::class.java
+                        MusicOnlineActivity::class.java
                     )
                 )
                 overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)

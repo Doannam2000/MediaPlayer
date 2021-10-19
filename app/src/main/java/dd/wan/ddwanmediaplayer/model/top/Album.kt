@@ -1,7 +1,5 @@
 package dd.wan.ddwanmediaplayer.model.top
 
-import android.os.Parcelable
-import kotlinx.android.parcel.Parcelize
 import java.io.Serializable
 
 data class Album(

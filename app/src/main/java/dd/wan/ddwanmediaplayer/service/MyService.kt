@@ -8,6 +8,7 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.media.MediaPlayer
 import android.os.*
+import android.util.Log
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -27,27 +28,30 @@ import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_TIMER
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
 import dd.wan.ddwanmediaplayer.activities.PlayActivity
 import dd.wan.ddwanmediaplayer.R
-import dd.wan.ddwanmediaplayer.model.top.Song
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.currentTime
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.timer
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.position
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.uri
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.online
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.check
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.listRecommendMusic
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.song
 import kotlinx.android.synthetic.main.activity_play.*
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 
 class MyService : Service() {
+
     var mediaPlayer = MediaPlayer()
-    var online = false
     var type = 0
-    var position = 0
-    var currentTime = 0
     var action = 0
     var shuffle = false
     var isStop = false
-    var timer = 0
     var checkTimer = false
     val arrayPlayed = mutableSetOf<Int>()
-    var listRecommendMusic = ArrayList<Song>()
 
     lateinit var countDown: CountDownTimer
     private val handleTime = Handler()
@@ -86,27 +90,11 @@ class MyService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val bundle = intent!!.extras
         action = bundle!!.getInt("action")
-        val uri = bundle.getString("Uri")!!
-        currentTime = bundle.getInt("currentTime")
-        online = bundle.getBoolean("online")
-        if (online) {
-            listRecommendMusic = bundle.getSerializable("listRecommendMusic") as ArrayList<Song>
-            for (i in listRecommendMusic.indices) {
-                if (listRecommendMusic[i].id == uri)
-                    position = i
-            }
-        } else {
-            for (i in list.indices) {
-                if (list[i].uri == uri)
-                    position = i
-            }
-        }
         val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
         type = sharedPreferences.getInt("type", 0)
         timer = sharedPreferences.getInt("timer", 0)
         shuffle = sharedPreferences.getBoolean("shuffle", false)
         checkTimer = timer != 0
-
         if (shuffle)
             arrayPlayed.add(position)
         when (action) {
@@ -138,7 +126,9 @@ class MyService : Service() {
                         countDown.cancel()
                     handleTime.removeCallbacks(runTime)
                 }
-                createNotification()
+                GlobalScope.launch {
+                    createNotification()
+                }
             }
             ACTION_CHECK -> {
                 if (mediaPlayer.isPlaying)
@@ -146,11 +136,12 @@ class MyService : Service() {
                 else
                     playOrPause(check = false, exit = false)
             }
-            ACTION_CHANGE->{
+            ACTION_CHANGE -> {
                 setUpSong()
                 playOrPause(false, exit = false)
             }
         }
+
         return START_NOT_STICKY
     }
 
@@ -209,23 +200,10 @@ class MyService : Service() {
 
 
     @SuppressLint("RemoteViewLayout")
+
     fun createNotification() {
         val intent = Intent(this, PlayActivity::class.java)
-        val bundle = Bundle()
-        if (online) {
-            bundle.putSerializable("listRecommendMusic", listRecommendMusic)
-            bundle.putString("Uri", listRecommendMusic[position].id)
-        } else
-            bundle.putString("Uri", list[position].uri)
-        bundle.putInt("action", action)
-        bundle.putInt("timer", timer)
-        bundle.putBoolean("online", online)
-        if (mediaPlayer.isPlaying)
-            bundle.putBoolean("checked", true)
-        else
-            bundle.putBoolean("checked", false)
-        bundle.putInt("currentTime", mediaPlayer.currentPosition)
-        intent.putExtras(bundle)
+        check = mediaPlayer.isPlaying
         val pendingIntent =
             PendingIntent.getActivity(
                 this,
@@ -279,34 +257,29 @@ class MyService : Service() {
         remoteView.setOnClickPendingIntent(R.id.btnPrevious, sendAction(ACTION_PREVIOUS_SONG))
         remoteView.setOnClickPendingIntent(R.id.btnPlayN, sendAction(ACTION_PAUSE_OR_PLAY))
         remoteView.setOnClickPendingIntent(R.id.btnExit, sendAction(ACTION_STOP_SONG))
-
         startForeground(123, notification)
     }
 
-    fun setUpSong() {
+    private fun setUpSong() {
+        val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
+        val edit = sharedPreferences.edit()
         if (mediaPlayer.isPlaying) {
             mediaPlayer.release()
         }
-        val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
         mediaPlayer = MediaPlayer()
-        var url = ""
-        if (online) {
-            url = "https://api.mp3.zing.vn/api/streaming/audio/${listRecommendMusic[position].id}/320"
-            sharedPreferences.edit().putString("nameSong", listRecommendMusic[position].name)
-                .apply()
-            sharedPreferences.edit()
-                .putString("artists_names", listRecommendMusic[position].artists_names).apply()
-            sharedPreferences.edit().putString("thumbnail", listRecommendMusic[position].thumbnail)
-                .apply()
-            sharedPreferences.edit().putInt("duration", listRecommendMusic[position].duration)
-                .apply()
-            sharedPreferences.edit().putString("Uri", listRecommendMusic[position].id).apply()
+        var url = if (online) {
+            edit.putString("nameSong", listRecommendMusic[position].name)
+            edit.putString("artists_names", listRecommendMusic[position].artists_names)
+            edit.putString("thumbnail", listRecommendMusic[position].thumbnail)
+            edit.putInt("duration", listRecommendMusic[position].duration)
+            edit.putString("Uri", listRecommendMusic[position].id)
+            edit.apply()
+            "https://api.mp3.zing.vn/api/streaming/audio/${listRecommendMusic[position].id}/320"
         } else {
-            url = list[position].uri
             sharedPreferences.edit().putString("Uri", list[position].uri).apply()
+            list[position].uri
         }
         mediaPlayer.setDataSource(url)
-
         mediaPlayer.prepare()
         mediaPlayer.seekTo(currentTime)
         mediaPlayer.setOnCompletionListener {
@@ -332,7 +305,9 @@ class MyService : Service() {
                             stopSong()
                         } else {
                             playSong()
-                            createNotification()
+                            GlobalScope.launch {
+                                createNotification()
+                            }
                             sendDataToActivity()
                         }
                     }
@@ -364,23 +339,14 @@ class MyService : Service() {
     private fun sendAction(ac: Int): PendingIntent? {
         val intent = Intent(this, Broadcast::class.java)
         val bundle = Bundle()
-        if (online) {
-            bundle.putSerializable("listRecommendMusic", listRecommendMusic)
-            bundle.putString("Uri", listRecommendMusic[position].id)
-        } else
-            bundle.putString("Uri", list[position].uri)
         bundle.putInt("type", type)
         bundle.putInt("action", ac)
-        bundle.putBoolean("online", online)
-        bundle.putInt("currentTime", currentTime)
-
         intent.putExtras(bundle)
         return PendingIntent.getBroadcast(
             this.applicationContext,
             ac,
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT
-        )
+            PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
 
@@ -416,7 +382,9 @@ class MyService : Service() {
         mediaPlayer.seekTo(0)
         isStop = true
         mediaPlayer.stop()
-        createNotification()
+        GlobalScope.launch {
+            createNotification()
+        }
         sendDataToActivity()
         playOrPause(false, exit = false)
         arrayPlayed.clear()
@@ -424,6 +392,7 @@ class MyService : Service() {
 
     override fun onDestroy() {
         mediaPlayer.stop()
+        check = false
         val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
         sharedPreferences.edit().putInt("timer", 0).apply()
         super.onDestroy()
@@ -431,7 +400,7 @@ class MyService : Service() {
 
     private fun clearArrayPlayed() {
         if (online) {
-            if (arrayPlayed.size == list.size) {
+            if (arrayPlayed.size == listRecommendMusic.size) {
                 arrayPlayed.clear()
             }
         } else {

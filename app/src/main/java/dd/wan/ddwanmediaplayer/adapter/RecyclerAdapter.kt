@@ -1,6 +1,5 @@
 package dd.wan.ddwanmediaplayer.adapter
 
-import android.annotation.SuppressLint
 import android.graphics.BitmapFactory
 import android.view.LayoutInflater
 import android.view.View
@@ -10,8 +9,8 @@ import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 import dd.wan.ddwanmediaplayer.R
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.sdf
 import dd.wan.ddwanmediaplayer.model.offline.Podcast
-import java.text.SimpleDateFormat
 
 class RecyclerAdapter(var list: ArrayList<Podcast>) :
     RecyclerView.Adapter<RecyclerAdapter.ViewHolder>() {
@@ -42,11 +41,10 @@ class RecyclerAdapter(var list: ArrayList<Podcast>) :
         var artists_names:TextView = itemView.findViewById(R.id.artists_names)
         var time:TextView = itemView.findViewById(R.id.time)
         var imagePodcast: ImageView = itemView.findViewById(R.id.imagePodcast)
-        @SuppressLint("SimpleDateFormat")
         fun setData() {
             artists_names.text = list[adapterPosition].artist
             name.text = list[adapterPosition].title
-            time.text =  SimpleDateFormat("mm:ss").format(list[adapterPosition].duration)
+            time.text = sdf.format(list[adapterPosition].duration)
             if (list[adapterPosition].image.isNotEmpty()) {
                 try {
                     var image = list[adapterPosition].image
