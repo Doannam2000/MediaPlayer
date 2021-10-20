@@ -2,6 +2,7 @@ package dd.wan.ddwanmediaplayer.`interface`
 
 import dd.wan.ddwanmediaplayer.config.Constants
 import dd.wan.ddwanmediaplayer.model.recommend.RecommendMusic
+import dd.wan.ddwanmediaplayer.model.search.Search
 import dd.wan.ddwanmediaplayer.model.songinfo.SongInfo
 import dd.wan.ddwanmediaplayer.model.top.Music
 import retrofit2.Call
@@ -21,7 +22,7 @@ interface CallAPI {
             .build()
             .create(CallAPI::class.java)
 
-        val callInfoSong = Retrofit.Builder()
+        val callSearchSong = Retrofit.Builder()
             .addConverterFactory(GsonConverterFactory.create())
             .baseUrl(Constants.BASE_URL_SEARCH)
             .build()
@@ -34,21 +35,25 @@ interface CallAPI {
         @Query("videoId") videoId: Int,
         @Query("albumId") albumId: Int,
         @Query("chart") chart: String,
-        @Query("time") time: Int,
+        @Query("time") time: Int
     ): Call<Music>
 
     @GET("xhr/recommend")
     fun getRecommendSong(
         @Query("type") type: String,
-        @Query("id") id: String,
+        @Query("id") id: String
     ): Call<RecommendMusic>
 
     @GET("xhr/media/get-info")
     fun getInfo(
         @Query("type") type: String,
-        @Query("id") id: String,
-    ) : Call<SongInfo>
+        @Query("id") id: String
+    ): Call<SongInfo>
 
-
-
+    @GET("/complete")
+    fun searchSong(
+        @Query("type") type: String,
+        @Query("num") num: String,
+        @Query("query") query: String
+    ): Call<Search>
 }

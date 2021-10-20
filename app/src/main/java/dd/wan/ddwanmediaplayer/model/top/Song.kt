@@ -5,7 +5,7 @@ import java.io.Serializable
 
 data class Song(
     var album: Album,
-    var artist: ArtistX,
+    var artist: Artist,
     var artists: List<ArtistXX>,
     var artists_names: String,
     var code: String,
@@ -26,11 +26,11 @@ data class Song(
     var thumbnail: String,
     var title: String,
     var total: Int,
-    var type: String,
+    var type: String
 ) : Serializable {
     constructor() : this(
         Album(),
-        ArtistX(),
+        Artist(),
         emptyList(),
         "",
         "",

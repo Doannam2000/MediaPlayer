@@ -10,7 +10,7 @@ import android.view.animation.AnimationUtils
 import com.bumptech.glide.Glide
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
 import dd.wan.ddwanmediaplayer.R
-import dd.wan.ddwanmediaplayer.`interface`.CallAPI.Companion.callInfoSong
+import dd.wan.ddwanmediaplayer.`interface`.CallAPI.Companion.callApi
 import dd.wan.ddwanmediaplayer.activities.PlayActivity
 import dd.wan.ddwanmediaplayer.model.songinfo.SongInfo
 import dd.wan.ddwanmediaplayer.model.top.Song
@@ -73,8 +73,8 @@ class PlayFragment : Fragment(), PlayActivity.OnDataReceivedListener {
             AnimationUtils.loadAnimation(context, R.anim.anim_rotate)
     }
 
-    fun getTypeMusic(id:String,view: View){
-        val call = callInfoSong.getInfo("audio",id)
+    private fun getTypeMusic(id:String, view: View){
+        val call = callApi.getInfo("audio",id)
         call.enqueue(object :Callback<SongInfo>{
             override fun onResponse(call: Call<SongInfo>, response: Response<SongInfo>) {
                 val responseBody = response.body()!!

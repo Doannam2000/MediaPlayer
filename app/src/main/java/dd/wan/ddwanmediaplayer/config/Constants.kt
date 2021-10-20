@@ -27,7 +27,7 @@ import java.text.SimpleDateFormat
 class Constants {
     companion object {
         const val BASE_URL = "https://mp3.zing.vn/"
-        const val BASE_URL_SEARCH = "https://mp3.zing.vn/"
+        const val BASE_URL_SEARCH = "http://ac.mp3.zing.vn/"
         var listRecommendMusic = ArrayList<Song>()
         var currentTime = 0
         var check = false

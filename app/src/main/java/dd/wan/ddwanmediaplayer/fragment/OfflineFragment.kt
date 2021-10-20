@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -94,12 +95,16 @@ class OfflineFragment : Fragment() {
 
             override fun afterTextChanged(p0: Editable?) {
                 handle.removeCallbacks(run)
-                handle.postDelayed(run, 500)
+                handle.postDelayed(run, 1000)
             }
         })
 
         return view
     }
 
+    override fun onPause() {
+        super.onPause()
+        handle.removeCallbacks(run)
+    }
 
 }

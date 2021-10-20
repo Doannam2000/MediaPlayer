@@ -36,36 +36,39 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
-        android:text="Tên bài hát"
         android:ellipsize="marquee"
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
+        android:text="Tên bài hát"
         android:textColor="#F1F2F7"
         android:textSize="16sp"
         app:layout_constraintBottom_toBottomOf="@+id/previous"
-        app:layout_constraintEnd_toStartOf="@+id/setting"
+        app:layout_constraintEnd_toStartOf="@+id/btnList"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toEndOf="@+id/previous"
         app:layout_constraintTop_toTopOf="@+id/previous" />
 
     <ImageView
-        android:id="@+id/setting"
+        android:id="@+id/btnList"
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:padding="10dp"
-        android:src="@drawable/ic_baseline_more_vert_24"
+        android:src="@drawable/ic_baseline_playlist_play_24"
         app:layout_constraintBottom_toBottomOf="@+id/previous"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/previous" />
+
 
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/viewPager"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginBottom="10dp"
         app:layout_constraintBottom_toTopOf="@+id/guideline2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/previous" />
+
     <TextView
         android:id="@+id/time1"
         android:layout_width="wrap_content"
@@ -101,7 +104,7 @@
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="60dp"
         app:layout_constraintBottom_toTopOf="@+id/linearLayoutCompat"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/seekBar">
@@ -109,46 +112,47 @@
 
         <ImageView
             android:id="@+id/btnShuffle"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:alpha="0.5"
-            android:padding="15dp"
+            android:padding="18dp"
             android:src="@drawable/shuffle" />
 
 
         <ImageView
             android:id="@+id/btnFav"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:padding="10dp"
             android:alpha="0.5"
+            android:padding="18dp"
             android:src="@drawable/ic_baseline_favorite_24" />
 
         <ImageView
             android:id="@+id/btnClock"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:alpha="0.5"
-            android:padding="10dp"
+            android:padding="15dp"
             android:src="@drawable/clock" />
 
         <ImageView
-            android:id="@+id/btnList"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:id="@+id/btnDownload"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:alpha="0.5"
-            android:padding="10dp"
-            android:src="@drawable/ic_baseline_playlist_play_24" />
+            android:padding="18dp"
+            android:src="@drawable/ic_baseline_file_download_24" />
+
         <ImageView
             android:id="@+id/btnRepeat"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:padding="10dp"
+            android:padding="18dp"
             android:src="@drawable/repeat_all" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
@@ -156,36 +160,30 @@
     <androidx.appcompat.widget.LinearLayoutCompat
         android:id="@+id/linearLayoutCompat"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="60dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/guideline3"
-        app:layout_constraintVertical_bias="0.4"
-        tools:layout_editor_absoluteX="0dp">
+        app:layout_constraintTop_toTopOf="@+id/guideline3">
 
         <ImageView
             android:id="@+id/btnBack"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginLeft="15dp"
-            android:layout_marginRight="15dp"
             android:layout_weight="1"
+            android:padding="10dp"
             android:src="@drawable/ic_outline_skip_previous_24" />
 
         <ImageView
             android:id="@+id/btnBackward"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginLeft="15dp"
-            android:layout_marginRight="15dp"
             android:layout_weight="1"
+            android:padding="10dp"
             android:src="@drawable/ic_baseline_keyboard_arrow_left_24" />
 
         <ImageView
             android:id="@+id/btnPlay"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginLeft="15dp"
-            android:layout_marginRight="15dp"
             android:layout_weight="1"
             android:src="@drawable/ic_baseline_pause_24" />
 
@@ -193,18 +191,16 @@
             android:id="@+id/btnForward"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginLeft="15dp"
-            android:layout_marginRight="15dp"
             android:layout_weight="1"
+            android:padding="10dp"
             android:src="@drawable/ic_baseline_navigate_next_24" />
 
         <ImageView
             android:id="@+id/btnNext"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginLeft="15dp"
-            android:layout_marginRight="15dp"
             android:layout_weight="1"
+            android:padding="10dp"
             android:src="@drawable/ic_outline_skip_next_24" />
     </androidx.appcompat.widget.LinearLayoutCompat>
 </androidx.constraintlayout.widget.ConstraintLayout>
