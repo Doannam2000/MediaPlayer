@@ -146,7 +146,8 @@ class OnlineFragment : Fragment() {
                 override fun onResponse(call: Call<Search>, response: Response<Search>) {
                     val responseBody = response.body()!!
                     list.clear()
-                    list.addAll(responseBody.data[0].song)
+                    if(responseBody.data.isNotEmpty())
+                        list.addAll(responseBody.data[0].song)
                     Log.d("checkList", responseBody.data.toString())
                     adapter1.notifyDataSetChanged()
                     view?.progressBar?.visibility = View.GONE
