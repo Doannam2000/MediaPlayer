@@ -268,14 +268,14 @@ class MyService : Service() {
         }
         mediaPlayer = MediaPlayer()
         var url = if (online) {
-            edit.putString("nameSong", listRecommendMusic[position].name)
-            edit.putString("artists_names", listRecommendMusic[position].artists_names)
-            edit.putString("thumbnail", listRecommendMusic[position].thumbnail)
-            edit.putInt("duration", listRecommendMusic[position].duration)
-            edit.putString("Uri", listRecommendMusic[position].id)
-            edit.apply()
             song = listRecommendMusic[position]
-            "https://api.mp3.zing.vn/api/streaming/audio/${listRecommendMusic[position].id}/320"
+            edit.putString("nameSong", song.name)
+            edit.putString("artists_names", song.artists_names)
+            edit.putString("thumbnail", song.thumbnail)
+            edit.putInt("duration",song.duration)
+            edit.putString("Uri", song.id)
+            edit.apply()
+            "https://api.mp3.zing.vn/api/streaming/audio/${song.id}/320"
         } else {
             sharedPreferences.edit().putString("Uri", list[position].uri).apply()
             list[position].uri
@@ -399,7 +399,7 @@ class MyService : Service() {
         super.onDestroy()
     }
 
-    private fun clearArrayPlayed() {
+    fun clearArrayPlayed() {
         if (online) {
             if (arrayPlayed.size == listRecommendMusic.size) {
                 arrayPlayed.clear()

@@ -55,7 +55,7 @@ class PlayFragment : Fragment(), PlayActivity.OnDataReceivedListener {
         } else {
             view.name.text = list[position].title
             view.artists_names.text = list[position].artist
-            view.type.text = " "
+            view.type.text = list[position].gener
             if (list[position].image.isNotEmpty()) {
                 try {
                     val image = list[position].image

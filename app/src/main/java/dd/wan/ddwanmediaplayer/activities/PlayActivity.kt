@@ -1,6 +1,7 @@
 package dd.wan.ddwanmediaplayer.activities
 
 import android.app.AlertDialog
+import android.app.DownloadManager
 import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -22,9 +23,14 @@ import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
 import kotlinx.android.synthetic.main.custom_editext_dialog.view.*
 import android.content.*
 import android.media.MediaPlayer
+import android.net.Uri
+import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.util.Log
+import android.webkit.MimeTypeMap
+import android.webkit.URLUtil
+import android.widget.Toast
 import androidx.viewpager.widget.ViewPager
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
@@ -44,6 +50,7 @@ import dd.wan.ddwanmediaplayer.config.Constants.Companion.currentTime
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.listRecommendMusic
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.song
 import dd.wan.ddwanmediaplayer.fragment.PlayFragment
+import dd.wan.ddwanmediaplayer.model.offline.ReadPodcast
 import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.MyService
 
@@ -57,6 +64,8 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
     var bound = false
     var handler = Handler()
     var bundle = Bundle()
+    var download = 0L
+
 
     private var dataListener: OnDataReceivedListener? = null
 
@@ -67,6 +76,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
     fun setListener(listener: OnDataReceivedListener?) {
         dataListener = listener
     }
+
 
     var run = object : Runnable {
         override fun run() {
@@ -156,6 +166,16 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
         }
     }
 
+    private val broadcastDownload = object :BroadcastReceiver(){
+        override fun onReceive(p0: Context?, p1: Intent?) {
+            var id =   p1?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID,-1)
+            if(id == download) {
+                Toast.makeText(applicationContext, "Tải xuống thành công", Toast.LENGTH_SHORT)
+                    .show()
+                list = ReadPodcast(applicationContext).loadSong()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -198,31 +218,34 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
             mySerVice.playOr()
         }
 
+
+        btnDownload.setOnClickListener {
+            if(online)
+            {
+                Toast.makeText(this,"Đang tải xuống",Toast.LENGTH_SHORT).show()
+                val ur = "https://api.mp3.zing.vn/api/streaming/audio/${song.id}/320"
+                val request = DownloadManager.Request(Uri.parse(ur))
+                    .setTitle("Đang tải xuống")
+                    .setDescription(song.name)
+                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+                    .setAllowedOverMetered(true)
+                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, song.name+"_"+song.id+".mp3")
+                val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                download = downloadManager.enqueue(request)
+            }
+            else
+                Toast.makeText(this,"Bài hát đã có trong máy",Toast.LENGTH_SHORT).show()
+        }
+
         btnList.setOnClickListener { viewPager.currentItem = 1 }
         btnBack.setOnClickListener {
-            if (online) {
-                if (mySerVice.arrayPlayed.size == listRecommendMusic.size) {
-                    mySerVice.arrayPlayed.clear()
-                }
-            } else {
-                if (mySerVice.arrayPlayed.size == list.size) {
-                    mySerVice.arrayPlayed.clear()
-                }
-            }
+            mySerVice.clearArrayPlayed()
             mySerVice.previous()
             dataListener!!.onDataReceived(song, position, online)
         }
 
         btnNext.setOnClickListener {
-            if (online) {
-                if (mySerVice.arrayPlayed.size == listRecommendMusic.size) {
-                    mySerVice.arrayPlayed.clear()
-                }
-            } else {
-                if (mySerVice.arrayPlayed.size == list.size) {
-                    mySerVice.arrayPlayed.clear()
-                }
-            }
+            mySerVice.clearArrayPlayed()
             mySerVice.nextSong()
             dataListener!!.onDataReceived(song, position, online)
         }
@@ -402,6 +425,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
             .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
+        registerReceiver(broadcastDownload,IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
     }
 
 
