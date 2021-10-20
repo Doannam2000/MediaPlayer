@@ -18,6 +18,7 @@ import retrofit2.Response
 import android.app.ActivityOptions
 import androidx.appcompat.app.AppCompatActivity
 import dd.wan.ddwanmediaplayer.R
+import dd.wan.ddwanmediaplayer.activities.MusicOnlineActivity
 import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.Broadcast
 import java.text.SimpleDateFormat
@@ -62,6 +63,8 @@ class Constants {
                             R.anim.right_to_left,
                             R.anim.right_to_left_out)
                         context.startActivity(intent1, options.toBundle())
+                        activity = false
+                        (context as MusicOnlineActivity).finish()
                     }
                     if (startSer) {
                         val intent = Intent(context, MyService::class.java)

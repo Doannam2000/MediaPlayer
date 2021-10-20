@@ -60,6 +60,14 @@ class OfflineFragment : Fragment() {
         adapter.setCallback {
             val podcast = MyApplication.list[it]
             val bundle1 = Bundle()
+
+            dataTrans.ChangeData(check1 = true,
+                online1 = false,
+                activity1 = false,
+                currentTime1 = 0,
+                position1 = it,
+                Song())
+
             bundle1.putString("Uri", podcast.uri)
             bundle1.putInt("action", MyApplication.ACTION_PLAY_SONG)
 
@@ -73,12 +81,6 @@ class OfflineFragment : Fragment() {
                 R.anim.right_to_left,
                 R.anim.right_to_left_out)
             startActivity(intent,options.toBundle())
-            dataTrans.ChangeData(check1 = true,
-                online1 = false,
-                activity1 = true,
-                currentTime1 = 0,
-                position1 = it,
-                Song())
         }
         view.list_Podcast.adapter = adapter
 

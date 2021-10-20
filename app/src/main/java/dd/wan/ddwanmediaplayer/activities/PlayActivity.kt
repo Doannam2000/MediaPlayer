@@ -25,9 +25,14 @@ import android.media.MediaPlayer
 import android.os.Handler
 import android.os.IBinder
 import android.util.Log
+import androidx.viewpager.widget.ViewPager
+import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PAUSE_OR_PLAY
 import dd.wan.ddwanmediaplayer.R
+import dd.wan.ddwanmediaplayer.`interface`.DataFragToAct
+import dd.wan.ddwanmediaplayer.adapter.ViewPagerAdapter
+import dd.wan.ddwanmediaplayer.config.Constants
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.online
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.check
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.position
@@ -37,11 +42,13 @@ import dd.wan.ddwanmediaplayer.config.Constants.Companion.timer
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.sdf
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.currentTime
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.listRecommendMusic
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.song
+import dd.wan.ddwanmediaplayer.fragment.PlayFragment
 import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.MyService
 
 
-class PlayActivity : AppCompatActivity() {
+class PlayActivity : AppCompatActivity(), DataFragToAct {
 
     private var type = 0
     var shuffle = false
@@ -49,6 +56,18 @@ class PlayActivity : AppCompatActivity() {
     lateinit var mySerVice: MyService
     var bound = false
     var handler = Handler()
+    var bundle = Bundle()
+
+    private var dataListener: OnDataReceivedListener? = null
+
+    interface OnDataReceivedListener {
+        fun onDataReceived(song: Song,position:Int,online:Boolean)
+    }
+
+    fun setListener(listener: OnDataReceivedListener?) {
+        dataListener = listener
+    }
+
     var run = object : Runnable {
         override fun run() {
             if (mySerVice.mediaPlayer.isPlaying) {
@@ -107,6 +126,7 @@ class PlayActivity : AppCompatActivity() {
                 }
                 updateUI()
                 time1.text = sdf.format(currentTime)
+                dataListener?.onDataReceived(song, position, online)
             }
         }
     }
@@ -146,8 +166,11 @@ class PlayActivity : AppCompatActivity() {
         type = sharedPreferences.getInt("type", 0)
         shuffle = sharedPreferences.getBoolean("shuffle", false)
 
+        changeDataFragment()
+        var adapter = ViewPagerAdapter(supportFragmentManager,lifecycle,bundle)
+        viewPager.adapter = adapter
 
-        imageView.animation = AnimationUtils.loadAnimation(this, R.anim.anim_rotate)
+        dataListener?.onDataReceived(song, position, online)
 
         if (timer != 0)
             btnClock.alpha = 1F
@@ -168,16 +191,14 @@ class PlayActivity : AppCompatActivity() {
         else
             btnShuffle.alpha = 0.5F
 
-        LocalBroadcastManager.getInstance(this)
-            .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
-        LocalBroadcastManager.getInstance(this)
-            .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
+
         seekBar.progress = currentTime
 
         btnPlay.setOnClickListener {
             mySerVice.playOr()
         }
 
+        btnList.setOnClickListener { viewPager.currentItem = 1 }
         btnBack.setOnClickListener {
             if (online) {
                 if (mySerVice.arrayPlayed.size == listRecommendMusic.size) {
@@ -189,6 +210,7 @@ class PlayActivity : AppCompatActivity() {
                 }
             }
             mySerVice.previous()
+            dataListener!!.onDataReceived(song, position, online)
         }
 
         btnNext.setOnClickListener {
@@ -202,7 +224,7 @@ class PlayActivity : AppCompatActivity() {
                 }
             }
             mySerVice.nextSong()
-
+            dataListener!!.onDataReceived(song, position, online)
         }
 
         btnRepeat.setOnClickListener {
@@ -269,6 +291,7 @@ class PlayActivity : AppCompatActivity() {
                 true
             }
         }
+
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
             }
@@ -284,6 +307,7 @@ class PlayActivity : AppCompatActivity() {
 
         })
         updateUI()
+
         btnClock.setOnClickListener {
             val bottom = BottomSheetDialog(this, R.style.bottomSheetDialog)
             bottom.setContentView(R.layout.custom_bottom_sheet)
@@ -372,6 +396,12 @@ class PlayActivity : AppCompatActivity() {
                     nameTimer.text = "Hẹn giờ ( $timer phút )"
             }
         }
+
+
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
     }
 
 
@@ -380,27 +410,11 @@ class PlayActivity : AppCompatActivity() {
         if (online) {
             time1.text = sdf.format(currentTime)
             name1.text = listRecommendMusic[position].name
-            name.text =
-                listRecommendMusic[position].name + "\n\n" + listRecommendMusic[position].artists_names
-            var linkImg  = listRecommendMusic[position].thumbnail.removeRange(34,48)
-            Glide.with(this).load(linkImg).into(imageView)
             time2.text = sdf.format(listRecommendMusic[position].duration * 1000)
             seekBar.max = listRecommendMusic[position].duration * 1000
         } else {
-            if (list[position].image.isNotEmpty()) {
-                try {
-                    val image = list[position].image
-                    imageView.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
-                } catch (e: Exception) {
-                    imageView.setImageResource(R.drawable.music_icon)
-                }
-            } else {
-                imageView.setImageResource(R.drawable.music_icon)
-            }
             time1.text = sdf.format(currentTime)
             name1.text = list[position].title
-            val string = "${list[position].title} \n\n ${list[position].artist}"
-            name.text = string
             time2.text = sdf.format(list[position].duration)
             seekBar.max = list[position].duration
         }
@@ -425,5 +439,26 @@ class PlayActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastPlay)
     }
 
+    private fun changeDataFragment() {
+        bundle = Bundle()
+        bundle.putBoolean("online", online)
+        if(online) {
+            bundle.putSerializable("song",song)
+            bundle.putSerializable("listRecommend", listRecommendMusic)
+        }else{
+            bundle.putInt("position", position)
+        }
+    }
+
+    override fun sendData(song1: Song, position1: Int, online1: Boolean) {
+        currentTime = 0
+        song = song1
+        position = position1
+        online = online1
+        mySerVice.play()
+        updateUI()
+        dataListener!!.onDataReceived(song,position,online)
+        viewPager.currentItem = 0
+    }
 
 }

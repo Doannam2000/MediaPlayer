@@ -274,6 +274,7 @@ class MyService : Service() {
             edit.putInt("duration", listRecommendMusic[position].duration)
             edit.putString("Uri", listRecommendMusic[position].id)
             edit.apply()
+            song = listRecommendMusic[position]
             "https://api.mp3.zing.vn/api/streaming/audio/${listRecommendMusic[position].id}/320"
         } else {
             sharedPreferences.edit().putString("Uri", list[position].uri).apply()

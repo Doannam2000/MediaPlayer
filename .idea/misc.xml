@@ -45,6 +45,8 @@
         <entry key="..\:/Code/Kotlin/DDWAN_MUSIC/MediaPlayer/app/src/main/res/layout/fragment_favorite.xml" value="0.36666666666666664" />
         <entry key="..\:/Code/Kotlin/DDWAN_MUSIC/MediaPlayer/app/src/main/res/layout/fragment_offline.xml" value="0.36666666666666664" />
         <entry key="..\:/Code/Kotlin/DDWAN_MUSIC/MediaPlayer/app/src/main/res/layout/fragment_online.xml" value="0.36666666666666664" />
+        <entry key="..\:/Code/Kotlin/DDWAN_MUSIC/MediaPlayer/app/src/main/res/layout/fragment_play.xml" value="0.36666666666666664" />
+        <entry key="..\:/Code/Kotlin/DDWAN_MUSIC/MediaPlayer/app/src/main/res/layout/fragment_recommend.xml" value="0.36666666666666664" />
         <entry key="..\:/Code/Kotlin/DDWAN_MUSIC/MediaPlayer/app/src/main/res/layout/item.xml" value="0.36666666666666664" />
         <entry key="..\:/Code/Kotlin/DDWAN_MUSIC/MediaPlayer/app/src/main/res/menu/menu.xml" value="0.36666666666666664" />
       </map>

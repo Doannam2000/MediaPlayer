@@ -21,6 +21,11 @@ interface CallAPI {
             .build()
             .create(CallAPI::class.java)
 
+        val callInfoSong = Retrofit.Builder()
+            .addConverterFactory(GsonConverterFactory.create())
+            .baseUrl(Constants.BASE_URL_SEARCH)
+            .build()
+            .create(CallAPI::class.java)
     }
 
     @GET("xhr/chart-realtime")
@@ -43,4 +48,7 @@ interface CallAPI {
         @Query("type") type: String,
         @Query("id") id: String,
     ) : Call<SongInfo>
+
+
+
 }

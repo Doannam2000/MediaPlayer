@@ -89,7 +89,10 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
             } else {
                 getCurrentSong(this)
                 if (online) {
-                    getRecommendSong(true, startSer = true, ACTION_CHANGE, this)
+                    if (!isMyServiceRunning(MyService::class.java, this))
+                        getRecommendSong(true, startSer = true, ACTION_CHANGE, this)
+                    else
+                        getRecommendSong(true, startSer = false, ACTION_CHANGE, this)
                 } else {
                     val intent = Intent(this, PlayActivity::class.java)
                     startActivity(intent)

@@ -40,13 +40,14 @@ class OnlineFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_online, container, false)
         adapter = RecyclerMusicAdapter(listSong)
         adapter.setCallback {
+            view.progressBar.visibility = View.VISIBLE
             context?.let { it1 ->
                 Constants.getRecommendSong(true, startSer = true, MyApplication.ACTION_PLAY_SONG,
                     it1)
             }
             dataTrans.ChangeData(check1 = true,
                 online1 = true,
-                activity1 = true,
+                activity1 = false,
                 currentTime1 = 0,
                 position1 = 0,
                 song = listSong[it])
