@@ -19,6 +19,7 @@ import android.app.ActivityOptions
 import androidx.appcompat.app.AppCompatActivity
 import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.activities.MusicOnlineActivity
+import dd.wan.ddwanmediaplayer.model.FavoriteSong
 import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.Broadcast
 import java.text.SimpleDateFormat
@@ -35,6 +36,7 @@ class Constants {
         var activity = false
         var online = true
         var position = 0
+        var isFavorite = false
         var song = Song()
         var uri = ""
 
@@ -127,6 +129,15 @@ class Constants {
                 }
             }
             return false
+        }
+        fun getFavoriteSong(favoriteMusic:FavoriteSong):Song{
+            val song1 = Song()
+            song1.name = favoriteMusic.song.title
+            song1.id = favoriteMusic.song.uri
+            song1.artists_names = favoriteMusic.song.artist
+            song1.thumbnail = favoriteMusic.thumbnail
+            song1.duration = favoriteMusic.song.duration
+            return song1
         }
     }
 }

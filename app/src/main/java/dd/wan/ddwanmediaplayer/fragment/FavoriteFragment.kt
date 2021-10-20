@@ -1,23 +1,77 @@
 package dd.wan.ddwanmediaplayer.fragment
 
+import android.app.ActivityOptions
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.LinearLayoutManager
+import dd.wan.ddwanmediaplayer.MyApplication
 import dd.wan.ddwanmediaplayer.R
+import dd.wan.ddwanmediaplayer.`interface`.DataTransmission
+import dd.wan.ddwanmediaplayer.activities.PlayActivity
+import dd.wan.ddwanmediaplayer.adapter.RecyclerFavoriteMusic
+import dd.wan.ddwanmediaplayer.config.Constants
+import dd.wan.ddwanmediaplayer.model.top.Song
+import dd.wan.ddwanmediaplayer.service.MyService
+import kotlinx.android.synthetic.main.fragment_favorite.*
+import kotlinx.android.synthetic.main.fragment_favorite.view.*
 
 
 class FavoriteFragment : Fragment() {
 
+    lateinit var dataTrans: DataTransmission
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        dataTrans = context as DataTransmission
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_favorite, container, false)
+        var view = inflater.inflate(R.layout.fragment_favorite, container, false)
+        view.list_Favorite.layoutManager = LinearLayoutManager(context)
+        var adapter = RecyclerFavoriteMusic(MyApplication.listFavorite)
+        adapter.setCallback {
+            val favoriteMusic = MyApplication.listFavorite[it]
+            var song = Song()
+            if (favoriteMusic.isOnline) {
+                song.name = favoriteMusic.song.title
+                song.id = favoriteMusic.song.uri
+                song.artists_names = favoriteMusic.song.artist
+                song.thumbnail = favoriteMusic.thumbnail
+                song.duration = favoriteMusic.song.duration
+            }
+            dataTrans.ChangeData(
+                check1 = true,
+                online1 = favoriteMusic.isOnline,
+                activity1 = false,
+                currentTime1 = 0,
+                position1 = it,
+                isFavorite1 = 1,
+                song
+            )
+
+            val bundle1 = Bundle()
+            bundle1.putInt("action", MyApplication.ACTION_PLAY_SONG)
+            val intent11 = Intent(context, MyService::class.java)
+            intent11.putExtras(bundle1)
+            context?.startService(intent11)!!
+
+            val intent = Intent(context, PlayActivity::class.java)
+            intent.putExtras(bundle1)
+            val options = ActivityOptions.makeCustomAnimation(context,
+                R.anim.right_to_left,
+                R.anim.right_to_left_out)
+            startActivity(intent, options.toBundle())
+
+        }
+        view.list_Favorite.adapter = adapter
+        return view
     }
-
-
 }

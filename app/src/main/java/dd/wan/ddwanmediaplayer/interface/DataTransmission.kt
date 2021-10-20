@@ -10,6 +10,7 @@ interface DataTransmission {
         activity1: Boolean,
         currentTime1: Int,
         position1: Int,
+        isFavorite1:Int,
         song:Song
     )
 }

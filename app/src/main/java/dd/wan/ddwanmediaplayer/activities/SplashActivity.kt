@@ -6,16 +6,22 @@ import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.listFavorite
 import dd.wan.ddwanmediaplayer.R
+import dd.wan.ddwanmediaplayer.model.FavoriteSong
 import dd.wan.ddwanmediaplayer.model.offline.ReadPodcast
+import dd.wan.ddwanmediaplayer.sql.SQLHelper
 import kotlin.system.exitProcess
 
 class SplashActivity : AppCompatActivity() {
+    lateinit var sql:SQLHelper
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
+        sql = SQLHelper(this)
         requestPermission()
     }
 
@@ -26,6 +32,10 @@ class SplashActivity : AppCompatActivity() {
         if (requestCode == 123) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 list = ReadPodcast(this).loadSong()
+                listFavorite = sql.getAll()
+                list.forEach {
+                    listFavorite.add(FavoriteSong(it,"",false))
+                }
                 Handler().postDelayed({
                     startActivity(
                         Intent(
@@ -59,6 +69,10 @@ class SplashActivity : AppCompatActivity() {
             )
         } else {
             list = ReadPodcast(this).loadSong()
+            listFavorite = sql.getAll()
+            list.forEach {
+                listFavorite.add(FavoriteSong(it, "", false))
+            }
             Handler().postDelayed({
                 startActivity(
                     Intent(

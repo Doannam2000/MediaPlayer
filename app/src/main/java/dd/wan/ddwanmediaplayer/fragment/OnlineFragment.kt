@@ -59,6 +59,7 @@ class OnlineFragment : Fragment() {
                 activity1 = false,
                 currentTime1 = 0,
                 position1 = 0,
+                isFavorite1 = 0,
                 song = listSong[it])
             view.progressBar.visibility = View.VISIBLE
             context?.let { it1 ->
@@ -81,12 +82,12 @@ class OnlineFragment : Fragment() {
             else
                 list[it].artists
             song.name = list[it].name
-            Log.d("checkList",song.toString())
             dataTrans.ChangeData(check1 = true,
                 online1 = true,
                 activity1 = false,
                 currentTime1 = 0,
                 position1 = 0,
+                isFavorite1 = 0,
                 song = song)
             context?.let { it1 ->
                 Constants.getRecommendSong(true, startSer = true, MyApplication.ACTION_PLAY_SONG,
@@ -124,7 +125,6 @@ class OnlineFragment : Fragment() {
                 val responseBody = response.body()!!
                 listSong.addAll(responseBody.data.song)
                 view?.progressBar?.visibility = View.GONE
-                Log.d("dulieu", listSong.toString())
                 adapter.notifyDataSetChanged()
             }
 
@@ -148,7 +148,6 @@ class OnlineFragment : Fragment() {
                     list.clear()
                     if(responseBody.data.isNotEmpty())
                         list.addAll(responseBody.data[0].song)
-                    Log.d("checkList", responseBody.data.toString())
                     adapter1.notifyDataSetChanged()
                     view?.progressBar?.visibility = View.GONE
                 }

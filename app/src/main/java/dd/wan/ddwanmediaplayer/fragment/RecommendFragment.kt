@@ -8,11 +8,14 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.listFavorite
 import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.`interface`.DataFragToAct
 import dd.wan.ddwanmediaplayer.activities.PlayActivity
 import dd.wan.ddwanmediaplayer.adapter.RecyclerAdapter
+import dd.wan.ddwanmediaplayer.adapter.RecyclerFavoriteMusic
 import dd.wan.ddwanmediaplayer.adapter.RecyclerMusicAdapter
+import dd.wan.ddwanmediaplayer.config.Constants
 import dd.wan.ddwanmediaplayer.model.top.Song
 import kotlinx.android.synthetic.main.fragment_recommend.view.*
 
@@ -32,21 +35,33 @@ class RecommendFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_recommend, container, false)
         val bundle = arguments
-        val online = bundle!!.getBoolean("online")
-        val adapter = if(online){
-            val list = bundle.getSerializable("listRecommend") as ArrayList<Song>
-            val adapter = RecyclerMusicAdapter(list)
+        val isFav = bundle!!.getBoolean("isFav")
+        val adapter = if(isFav){
+            val adapter = RecyclerFavoriteMusic(listFavorite)
             adapter.setCallback {
-                dataFragToAct.sendData(list[it],it,online)
+                val song = Constants.getFavoriteSong(listFavorite[it])
+                dataFragToAct.sendData(song,it,listFavorite[it].isOnline,isFav)
             }
             adapter
         }else{
-            val adapter = RecyclerAdapter(list)
-            adapter.setCallback {
-                dataFragToAct.sendData(Song(),it,online)
+            val online = bundle.getBoolean("online")
+            val adapter = if(online){
+                val list = bundle.getSerializable("listRecommend") as ArrayList<Song>
+                val adapter = RecyclerMusicAdapter(list)
+                adapter.setCallback {
+                    dataFragToAct.sendData(list[it],it,online,isFav)
+                }
+                adapter
+            }else{
+                val adapter = RecyclerAdapter(list)
+                adapter.setCallback {
+                    dataFragToAct.sendData(Song(),it,online,isFav)
+                }
+                adapter
             }
             adapter
         }
+
         view.recyclerRecommend.adapter = adapter
         view.recyclerRecommend.layoutManager = LinearLayoutManager(context)
         return  view

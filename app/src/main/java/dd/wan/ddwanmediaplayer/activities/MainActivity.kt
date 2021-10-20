@@ -89,8 +89,6 @@ class MainActivity : AppCompatActivity() {
         val searchView: TextView = findViewById(R.id.searchView)
         val recyclerView: RecyclerView = findViewById(R.id.list_Podcast)
 
-
-
         getCurrentSong(this)
 
         if (online) {
@@ -211,25 +209,3 @@ class MainActivity : AppCompatActivity() {
     }
 
 }
-
-//            if (activity) {
-//                finish()
-//                activity = false
-//                overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
-//            } else {
-//                val podcast = list[position]
-//                val bundle1 = Bundle()
-//                bundle1.putString("Uri", podcast.uri)
-//                bundle1.putInt("currentTime", 0)
-//                bundle1.putInt("action", currentTime)
-//                bundle1.putBoolean("activity", true)
-//                bundle1.putInt("timer", timer)
-//                var checkTimer = false
-//                if (timer != 0)
-//                    checkTimer = true
-//                bundle1.putBoolean("checkTimer", checkTimer)
-//                val intent = Intent(this, PlayActivity::class.java)
-//                intent.putExtras(bundle1)
-//                startActivity(intent)
-//                overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
-//            }

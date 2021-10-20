@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -18,7 +17,6 @@ import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.`interface`.DataTransmission
 import dd.wan.ddwanmediaplayer.activities.PlayActivity
 import dd.wan.ddwanmediaplayer.adapter.RecyclerAdapter
-import dd.wan.ddwanmediaplayer.config.Constants
 import dd.wan.ddwanmediaplayer.model.offline.Podcast
 import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.MyService
@@ -59,19 +57,17 @@ class OfflineFragment : Fragment() {
         view.list_Podcast.setHasFixedSize(true)
         adapter = RecyclerAdapter(MyApplication.list)
         adapter.setCallback {
-            val podcast = MyApplication.list[it]
-            val bundle1 = Bundle()
 
             dataTrans.ChangeData(check1 = true,
                 online1 = false,
                 activity1 = false,
                 currentTime1 = 0,
                 position1 = it,
+                isFavorite1 = 0,
                 Song())
 
-            bundle1.putString("Uri", podcast.uri)
+            val bundle1 = Bundle()
             bundle1.putInt("action", MyApplication.ACTION_PLAY_SONG)
-
             val intent11 = Intent(context, MyService::class.java)
             intent11.putExtras(bundle1)
             context?.startService(intent11)!!
