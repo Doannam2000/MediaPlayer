@@ -8,24 +8,15 @@
     tools:context=".activities.MusicOnlineActivity">
 
 
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/nestedScrollView"
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/fragmentContainerView"
+        android:name="androidx.navigation.fragment.NavHostFragment"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:fillViewport="true"
-        app:layout_constraintBottom_toTopOf="@+id/layout_music_play"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        app:defaultNavHost="true"
+        app:navGraph="@navigation/nav_graph" />
 
-        <androidx.fragment.app.FragmentContainerView
-            android:id="@+id/fragmentContainerView"
-            android:name="androidx.navigation.fragment.NavHostFragment"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            app:defaultNavHost="true"
-            app:navGraph="@navigation/nav_graph" />
-
-    </androidx.core.widget.NestedScrollView>
 
     <LinearLayout
         android:id="@+id/layout_music_play"
@@ -42,10 +33,11 @@
             android:gravity="center">
 
             <androidx.cardview.widget.CardView
-                android:backgroundTint="@android:color/transparent"
-                app:cardCornerRadius="10dp"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:backgroundTint="@android:color/transparent"
+                app:cardCornerRadius="10dp">
+
                 <ImageView
                     android:id="@+id/imageP"
                     android:layout_width="50dp"
@@ -66,19 +58,18 @@
                 android:id="@+id/nameSong"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_toEndOf="@+id/imageView"
                 android:ellipsize="marquee"
                 android:marqueeRepeatLimit="marquee_forever"
                 android:singleLine="true"
+                android:scrollHorizontally="true"
                 android:text="Tên bài hát"
                 android:textColor="@color/black" />
 
             <TextView
                 android:id="@+id/nameAuth"
+                android:scrollHorizontally="true"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_below="@+id/name"
-                android:layout_alignStart="@+id/name"
                 android:ellipsize="marquee"
                 android:marqueeRepeatLimit="marquee_forever"
                 android:singleLine="true"

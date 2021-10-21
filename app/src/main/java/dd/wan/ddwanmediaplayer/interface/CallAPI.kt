@@ -1,5 +1,6 @@
 package dd.wan.ddwanmediaplayer.`interface`
 
+import android.os.Build
 import dd.wan.ddwanmediaplayer.config.Constants
 import dd.wan.ddwanmediaplayer.model.recommend.RecommendMusic
 import dd.wan.ddwanmediaplayer.model.search.Search
@@ -12,23 +13,33 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 import okhttp3.OkHttpClient
-import java.util.*
 
 
 interface CallAPI {
 
     companion object {
 
+        private var tlsSpecs = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            listOf(ConnectionSpec.COMPATIBLE_TLS);
+        } else {
+            listOf(ConnectionSpec.MODERN_TLS)
+        }
+
+        var client = OkHttpClient.Builder()
+            .connectionSpecs(tlsSpecs)
+            .build()
 
         val callApi = Retrofit.Builder()
             .addConverterFactory(GsonConverterFactory.create())
             .baseUrl(Constants.BASE_URL)
+            .client(client)
             .build()
             .create(CallAPI::class.java)
 
         val callSearchSong = Retrofit.Builder()
             .addConverterFactory(GsonConverterFactory.create())
             .baseUrl(Constants.BASE_URL_SEARCH)
+            .client(client)
             .build()
             .create(CallAPI::class.java)
     }
