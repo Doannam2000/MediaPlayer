@@ -26,11 +26,9 @@ import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.widget.Toast
-import dd.wan.ddwanmediaplayer.MyApplication
 import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.`interface`.DataFragToAct
 import dd.wan.ddwanmediaplayer.adapter.ViewPagerAdapter
-import dd.wan.ddwanmediaplayer.config.Constants
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.online
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.check
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.position
@@ -48,6 +46,7 @@ import dd.wan.ddwanmediaplayer.model.offline.ReadPodcast
 import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.MyService
 import dd.wan.ddwanmediaplayer.sql.SQLHelper
+import java.io.File
 
 
 class PlayActivity : AppCompatActivity(), DataFragToAct {
@@ -213,14 +212,14 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
                 if ((online && !isFavorite) || (isFavorite && listFavorite[position].isOnline)) {
                     Toast.makeText(this, "Đang tải xuống", Toast.LENGTH_SHORT).show()
                     val ur = "https://api.mp3.zing.vn/api/streaming/audio/${song.id}/320"
-                    var string = song.name.filter { it.isLetterOrDigit() }
+                    val name = song.name.filter { it.isLetterOrDigit() } + "_" + song.id + ".mp3"
                     val request = DownloadManager.Request(Uri.parse(ur))
                         .setTitle("Đang tải xuống")
                         .setDescription(song.name)
                         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
                         .setAllowedOverMetered(true)
-                        .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
-                            string + "_" + song.id + ".mp3")
+                        .setAllowedOverRoaming(false)
+                        .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,name)
                     val downloadManager =
                         getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
                     download = downloadManager.enqueue(request)
