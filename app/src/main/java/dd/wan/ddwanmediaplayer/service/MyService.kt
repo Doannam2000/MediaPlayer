@@ -1,6 +1,7 @@
 package dd.wan.ddwanmediaplayer.service
 
 import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
@@ -40,6 +41,7 @@ import dd.wan.ddwanmediaplayer.config.Constants.Companion.getFavoriteSong
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.isFavorite
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.listRecommendMusic
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.song
+import dd.wan.ddwanmediaplayer.model.offline.Podcast
 import dd.wan.ddwanmediaplayer.model.top.Song
 import kotlinx.android.synthetic.main.activity_music_online.*
 import kotlinx.android.synthetic.main.activity_play.*
@@ -119,6 +121,9 @@ class MyService : Service() {
                 nextSong()
             }
             ACTION_STOP_SONG -> {
+                mediaPlayer.stop()
+                check = false
+                sharedPreferences.edit().putInt("timer", 0).apply()
                 playOrPause(check = false, exit = true)
                 stopSelf()
             }
@@ -162,6 +167,8 @@ class MyService : Service() {
             randomSong()
         } else {
             position--
+            if ((isFavorite && position >= listFavorite.size) || (online && position >= listRecommendMusic.size) || (!online && position >= list.size))
+                position --
             if (position < 0) {
                 position = if (isFavorite)
                     listFavorite.size - 1
@@ -195,11 +202,7 @@ class MyService : Service() {
             randomSong()
         } else {
             position++
-            if(isFavorite && position == listFavorite.size)
-                position = 0
-            if (online && position == listRecommendMusic.size)
-                position = 0
-            if (!online && position == list.size)
+            if ((isFavorite && position >= listFavorite.size) || (online && position >= listRecommendMusic.size) || (!online && position >= list.size))
                 position = 0
         }
         currentTime = 0
@@ -227,40 +230,15 @@ class MyService : Service() {
             .setContentIntent(pendingIntent)
             .setCustomContentView(remoteView)
             .build()
-        if (online) {
-            remoteView.setTextViewText(R.id.name, song.name)
-            remoteView.setTextViewText(R.id.name2, song.artists_names)
-            val target = NotificationTarget(applicationContext,
-                R.id.imageView,
-                remoteView,
-                notification,
-                123)
-            GlobalScope.launch {
-                Glide.with(baseContext)
-                    .asBitmap()
-                    .load(song.thumbnail)
-                    .into(target)
-            }
+
+        if ((isFavorite && listFavorite[position].isOnline) || (online && !isFavorite)) {
+            setUpRemoteOn(remoteView, notification)
         } else {
-            val podcast = if (isFavorite) {
-                listFavorite[position].song
-            } else {
-                list[position]
-            }
-            remoteView.setTextViewText(R.id.name, podcast.title)
-            remoteView.setTextViewText(R.id.name2, podcast.artist)
-            if (podcast.image.isNotEmpty()) {
-                try {
-                    val image = podcast.image
-                    remoteView.setImageViewBitmap(R.id.imageView,
-                        BitmapFactory.decodeByteArray(image, 0, image.size))
-                } catch (e: Exception) {
-                    remoteView.setImageViewResource(R.id.imageView, R.drawable.music_icon)
-                }
-            } else {
-                remoteView.setImageViewResource(R.id.imageView, R.drawable.music_icon)
-            }
+            val podcast = if (isFavorite) listFavorite[position].song
+            else list[position]
+            setUpRemoteOff(remoteView, podcast)
         }
+
 
         if (mediaPlayer.isPlaying) {
             remoteView.setImageViewResource(R.id.btnPlayN, R.drawable.ic_baseline_pause_24)
@@ -272,6 +250,38 @@ class MyService : Service() {
         remoteView.setOnClickPendingIntent(R.id.btnPlayN, sendAction(ACTION_PAUSE_OR_PLAY))
         remoteView.setOnClickPendingIntent(R.id.btnExit, sendAction(ACTION_STOP_SONG))
         startForeground(123, notification)
+    }
+
+    private fun setUpRemoteOn(remoteView: RemoteViews, notification: Notification) {
+        remoteView.setTextViewText(R.id.name, song.name)
+        remoteView.setTextViewText(R.id.name2, song.artists_names)
+        val target = NotificationTarget(applicationContext,
+            R.id.imageView,
+            remoteView,
+            notification,
+            123)
+        GlobalScope.launch {
+            Glide.with(baseContext)
+                .asBitmap()
+                .load(song.thumbnail)
+                .into(target)
+        }
+    }
+
+    private fun setUpRemoteOff(remoteView: RemoteViews, podcast: Podcast) {
+        remoteView.setTextViewText(R.id.name, podcast.title)
+        remoteView.setTextViewText(R.id.name2, podcast.artist)
+        if (podcast.image.isNotEmpty()) {
+            try {
+                val image = podcast.image
+                remoteView.setImageViewBitmap(R.id.imageView,
+                    BitmapFactory.decodeByteArray(image, 0, image.size))
+            } catch (e: Exception) {
+                remoteView.setImageViewResource(R.id.imageView, R.drawable.music_icon)
+            }
+        } else {
+            remoteView.setImageViewResource(R.id.imageView, R.drawable.music_icon)
+        }
     }
 
     private fun setUpSong() {
@@ -358,12 +368,13 @@ class MyService : Service() {
         val intent = Intent("Current_Song")
         val bundle = Bundle()
         if (online)
-            bundle.putSerializable("Song", listRecommendMusic[position])
+            bundle.putSerializable("Song", song)
         else
-            bundle.putString("Uri", list[position].uri)
+            if (isFavorite)
+                bundle.putString("Uri", listFavorite[position].song.uri)
+            else
+                bundle.putString("Uri", list[position].uri)
         bundle.putInt("action", action)
-        bundle.putBoolean("online", online)
-        bundle.putInt("currentTime", currentTime)
         intent.putExtras(bundle)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
         playOrPause(true, exit = false)
@@ -395,19 +406,20 @@ class MyService : Service() {
 
     private fun randomSong() {
         val random = Random()
-        if (online) {
-            position = random.nextInt(listRecommendMusic.size)
-            while (arrayPlayed.contains(position)) {
-                position = random.nextInt(listRecommendMusic.size)
-            }
-            arrayPlayed.add(position)
+        val size = if (isFavorite) {
+            listRecommendMusic.size
         } else {
-            position = random.nextInt(list.size)
-            while (arrayPlayed.contains(position)) {
-                position = random.nextInt(list.size)
+            if (online) {
+                listRecommendMusic.size
+            } else {
+                list.size
             }
-            arrayPlayed.add(position)
         }
+        position = random.nextInt(size)
+        while (arrayPlayed.contains(position)) {
+            position = random.nextInt(size)
+        }
+        arrayPlayed.add(position)
     }
 
     private fun stopSong() {
@@ -432,20 +444,17 @@ class MyService : Service() {
     }
 
     fun clearArrayPlayed() {
-        if (isFavorite) {
-            if (arrayPlayed.size == listFavorite.size) {
-                arrayPlayed.clear()
-            }
-        }
-        if (online) {
-            if (arrayPlayed.size == listRecommendMusic.size) {
-                arrayPlayed.clear()
-            }
+        val size = if (isFavorite) {
+            listRecommendMusic.size
         } else {
-            if (arrayPlayed.size == list.size) {
-                arrayPlayed.clear()
+            if (online) {
+                listRecommendMusic.size
+            } else {
+                list.size
             }
         }
+        if (arrayPlayed.size == size)
+            arrayPlayed.clear()
     }
 }
 

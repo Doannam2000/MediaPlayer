@@ -13,7 +13,7 @@ import dd.wan.ddwanmediaplayer.config.Constants.Companion.sdf
 import dd.wan.ddwanmediaplayer.model.offline.Podcast
 
 class RecyclerAdapter(var list: ArrayList<Podcast>) :
-    RecyclerView.Adapter<RecyclerAdapter.ViewHolder>() {
+    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
 
     lateinit var itemClick: (position: Int) -> Unit
@@ -27,9 +27,9 @@ class RecyclerAdapter(var list: ArrayList<Podcast>) :
         return ViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: RecyclerAdapter.ViewHolder, position: Int) {
-        holder.setData()
-    }
+//    override fun onBindViewHolder(holder: RecyclerAdapter.ViewHolder, position: Int) {
+//        holder.setData()
+//    }
 
     override fun getItemCount(): Int {
         return list.size
@@ -61,5 +61,10 @@ class RecyclerAdapter(var list: ArrayList<Podcast>) :
                 itemClick.invoke(adapterPosition)
             }
         }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        if(holder is ViewHolder)
+            holder.setData()
     }
 }

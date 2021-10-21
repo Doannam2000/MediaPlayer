@@ -25,7 +25,6 @@ import android.net.Uri
 import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
-import android.util.Log
 import android.widget.Toast
 import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.`interface`.DataFragToAct
@@ -60,7 +59,8 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
     var handler = Handler()
     var bundle = Bundle()
     var download = 0L
-    var isFavor = false
+    var checkFavorite = false
+    var checkDownload = true
     private var dataListener: OnDataReceivedListener? = null
 
     interface OnDataReceivedListener {
@@ -112,25 +112,11 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
             if (bundle == null)
                 return
             else {
-                seekBar.progress = currentTime
-                type = bundle.getInt("type")
                 action = bundle.getInt("action")
-                if (online) {
-                    val song = bundle.getSerializable("Song") as Song
-                    for (i in 0 until listRecommendMusic.size) {
-                        if (listRecommendMusic[i].id == song.id)
-                            position = i
-                    }
-                } else {
-                    val uri = bundle.getString("Uri")
-                    for (i in 0 until list.size) {
-                        if (list[i].uri == uri)
-                            position = i
-                    }
-                }
                 updateUI()
+                seekBar.progress = currentTime
                 time1.text = sdf.format(currentTime)
-                dataListener?.onDataReceived(song, position, online, isFavorite)
+                dataListener!!.onDataReceived(song, position, online, isFavorite)
             }
         }
     }
@@ -162,11 +148,15 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
 
     private val broadcastDownload = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
-            var id = p1?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+            val id = p1?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
             if (id == download) {
                 Toast.makeText(applicationContext, "Tải xuống thành công", Toast.LENGTH_SHORT)
                     .show()
-                list = ReadPodcast(applicationContext).loadSong()
+                SQLHelper(applicationContext).deleteDB(song.id)
+                listFavorite.clear()
+                Constants.updateDataFromSdcard(applicationContext)
+                if(isFavorite)
+                    viewPager.currentItem = 0
             }
         }
     }
@@ -181,7 +171,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
         shuffle = sharedPreferences.getBoolean("shuffle", false)
 
         changeDataFragment()
-        var adapter = ViewPagerAdapter(supportFragmentManager, lifecycle, bundle)
+        val adapter = ViewPagerAdapter(supportFragmentManager, lifecycle, bundle)
         viewPager.adapter = adapter
 
         dataListener?.onDataReceived(song, position, online, isFavorite)
@@ -212,9 +202,8 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
             mySerVice.playOr()
         }
 
-
         btnDownload.setOnClickListener {
-            if (online) {
+            if (checkDownload) {
                 Toast.makeText(this, "Đang tải xuống", Toast.LENGTH_SHORT).show()
                 val ur = "https://api.mp3.zing.vn/api/streaming/audio/${song.id}/320"
                 val request = DownloadManager.Request(Uri.parse(ur))
@@ -226,6 +215,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
                         song.name + "_" + song.id + ".mp3")
                 val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
                 download = downloadManager.enqueue(request)
+                checkDownload = false
             } else
                 Toast.makeText(this, "Bài hát đã có trong máy", Toast.LENGTH_SHORT).show()
         }
@@ -258,7 +248,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
                 }
             }
             edit.putInt("type", type)
-            edit.commit()
+            edit.apply()
             mySerVice.type = type
         }
         btnShuffle.setOnClickListener {
@@ -270,7 +260,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
                 btnShuffle.alpha = 1F
             }
             edit.putBoolean("shuffle", shuffle)
-            edit.commit()
+            edit.apply()
             mySerVice.shuffle = shuffle
         }
 
@@ -291,9 +281,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
             if (currentTime + 10000 < duration) {
                 seekBar.progress = currentTime + 10000
                 currentTime += 10000
-
                 mySerVice.mediaPlayer.seekTo(currentTime)
-
             }
         }
         previous.setOnClickListener {
@@ -324,7 +312,6 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
 
         })
         updateUI()
-
 
         // setUp Hẹn giờ
         btnClock.setOnClickListener {
@@ -370,7 +357,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
             time.setOnClickListener {
                 if (timer == 0) {
                     val view = View.inflate(this, R.layout.custom_editext_dialog, null)
-                    var builder = AlertDialog.Builder(this)
+                    val builder = AlertDialog.Builder(this)
                     builder.setView(view)
                     val dialog = builder.create()
                     dialog.show()
@@ -418,21 +405,12 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
 
 
         // setUp favorite
-        if (online) {
-            btnFav.visibility = View.VISIBLE
-            if (checkFavorite()) {
-                btnFav.alpha = 1F
-            } else
-                btnFav.alpha = 0.5F
-        } else {
-            btnFav.alpha = 0.5F
-            btnFav.visibility = View.INVISIBLE
-        }
+
 
         btnFav.setOnClickListener {
-            if (isFavor) {
+            if (checkFavorite) {
                 btnFav.alpha = 0.5F
-                isFavor = false
+                checkFavorite = false
                 for (i in listFavorite.indices) {
                     if (listFavorite[i].song.uri == song.id) {
                         listFavorite.removeAt(i)
@@ -449,13 +427,14 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
                 SQLHelper(this).insertDB(favoriteSong)
                 listFavorite.add(favoriteSong)
                 btnFav.alpha = 1F
-                isFavor = true
+                checkFavorite = true
                 Toast.makeText(this, "Đã thêm bài hát vào danh sách yêu thích", Toast.LENGTH_SHORT)
                     .show()
             }
+            if (isFavorite) {
+                viewPager.currentItem = 0
+            }
         }
-
-        Log.d("check fav ", isFavorite.toString())
 
         // register broadcast
         LocalBroadcastManager.getInstance(this)
@@ -466,40 +445,53 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
     }
 
 
-    fun checkFavorite(): Boolean {
+    private fun checkFavorite(): Boolean {
         listFavorite.forEach {
             if (it.song.uri == listRecommendMusic[position].id) {
-                isFavor = true
+                checkFavorite = true
                 return true
             }
         }
-        isFavor = false
+        checkFavorite = false
         return false
     }
 
     fun updateUI() {
-        if (online) {
-            time1.text = sdf.format(currentTime)
-            name1.text = song.name
-            time2.text = sdf.format(song.duration * 1000)
-            seekBar.max = song.duration * 1000
+        if ((isFavorite && listFavorite[position].isOnline) || (online && !isFavorite)) {
+            setUIOnline()
+            btnFav.isEnabled = true
+            if (checkFavorite())
+                btnFav.alpha = 1F
+            else
+                btnFav.alpha = 0.5F
         } else {
-            val podcast = if (isFavorite) {
-                listFavorite[position].song
-            } else {
-                list[position]
-            }
-            time1.text = sdf.format(currentTime)
-            name1.text = podcast.title
-            time2.text = sdf.format(podcast.duration)
-            seekBar.max = podcast.duration
+            if(isFavorite)
+                setUIOffline(listFavorite[position].song)
+            else
+                setUIOffline(list[position])
+            btnFav.alpha = 0.5F
+            btnFav.isEnabled = false
         }
+
         if (check || this::mySerVice.isInitialized && mySerVice.mediaPlayer.isPlaying)
             btnPlay.setImageResource(R.drawable.ic_baseline_pause_24)
         else
             btnPlay.setImageResource(R.drawable.ic_outline_play_arrow_24)
     }
 
+    private fun setUIOnline() {
+        time1.text = sdf.format(currentTime)
+        name1.text = song.name
+        time2.text = sdf.format(song.duration * 1000)
+        seekBar.max = song.duration * 1000
+    }
+
+    private fun setUIOffline(podcast: Podcast) {
+        time1.text = sdf.format(currentTime)
+        name1.text = podcast.title
+        time2.text = sdf.format(podcast.duration)
+        seekBar.max = podcast.duration
+    }
 
     override fun onStop() {
         super.onStop()
@@ -524,7 +516,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
         } else {
             bundle.putInt("position", position)
         }
-        bundle.putBoolean("isFav",isFavorite)
+        bundle.putBoolean("isFav", isFavorite)
     }
 
     override fun sendData(song1: Song, position1: Int, online1: Boolean, isFav: Boolean) {
@@ -538,5 +530,19 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
         dataListener!!.onDataReceived(song, position, online, isFavorite)
         viewPager.currentItem = 0
     }
+
+
+    override fun onBackPressed() {
+        activity = if (activity) {
+            finish()
+            overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
+            false
+        } else {
+            startActivity(Intent(this, MusicOnlineActivity::class.java))
+            overridePendingTransition(R.anim.left_to_right, R.anim.left_to_right_out)
+            true
+        }
+    }
+
 
 }

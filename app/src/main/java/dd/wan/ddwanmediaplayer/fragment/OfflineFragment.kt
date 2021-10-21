@@ -20,7 +20,7 @@ import dd.wan.ddwanmediaplayer.adapter.RecyclerAdapter
 import dd.wan.ddwanmediaplayer.model.offline.Podcast
 import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.MyService
-import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.fragment_offline.*
 import kotlinx.android.synthetic.main.fragment_offline.view.*
 
 class OfflineFragment : Fragment() {
@@ -88,7 +88,6 @@ class OfflineFragment : Fragment() {
 
             override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
             }
-
             override fun afterTextChanged(p0: Editable?) {
                 handle.removeCallbacks(run)
                 handle.postDelayed(run, 1000)

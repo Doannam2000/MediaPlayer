@@ -16,7 +16,7 @@ import dd.wan.ddwanmediaplayer.config.Constants
 import dd.wan.ddwanmediaplayer.model.FavoriteSong
 
 class RecyclerFavoriteMusic(var list: ArrayList<FavoriteSong>) :
-    RecyclerView.Adapter<RecyclerFavoriteMusic.ViewHolder>() {
+    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     lateinit var context: Context
     lateinit var itemClick: (position: Int) -> Unit
@@ -34,10 +34,6 @@ class RecyclerFavoriteMusic(var list: ArrayList<FavoriteSong>) :
         return ViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: RecyclerFavoriteMusic.ViewHolder, position: Int) {
-        holder.setData()
-    }
-
     override fun getItemCount(): Int {
         return list.size
     }
@@ -48,7 +44,6 @@ class RecyclerFavoriteMusic(var list: ArrayList<FavoriteSong>) :
         var artists_names: TextView = itemView.findViewById(R.id.artists_names)
         var time: TextView = itemView.findViewById(R.id.time)
         var imagePodcast: ImageView = itemView.findViewById(R.id.imagePodcast)
-
         @SuppressLint("CheckResult")
         fun setData() {
             artists_names.text = list[adapterPosition].song.artist
@@ -69,11 +64,16 @@ class RecyclerFavoriteMusic(var list: ArrayList<FavoriteSong>) :
                 }
             }
         }
-
         init {
             layout.setOnClickListener {
                 itemClick.invoke(adapterPosition)
             }
+        }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        if (holder is ViewHolder) {
+            holder.setData()
         }
     }
 }

@@ -20,8 +20,10 @@ import androidx.appcompat.app.AppCompatActivity
 import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.activities.MusicOnlineActivity
 import dd.wan.ddwanmediaplayer.model.FavoriteSong
+import dd.wan.ddwanmediaplayer.model.offline.ReadPodcast
 import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.Broadcast
+import dd.wan.ddwanmediaplayer.sql.SQLHelper
 import java.text.SimpleDateFormat
 
 
@@ -138,6 +140,14 @@ class Constants {
             song1.thumbnail = favoriteMusic.thumbnail
             song1.duration = favoriteMusic.song.duration
             return song1
+        }
+
+        fun updateDataFromSdcard(context: Context){
+            MyApplication.list = ReadPodcast(context ).loadSong()
+            MyApplication.listFavorite = SQLHelper(context).getAll()
+            MyApplication.list.forEach {
+                MyApplication.listFavorite.add(FavoriteSong(it, "", false))
+            }
         }
     }
 }

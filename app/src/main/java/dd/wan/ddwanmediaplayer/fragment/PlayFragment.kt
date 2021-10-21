@@ -13,6 +13,8 @@ import dd.wan.ddwanmediaplayer.MyApplication.Companion.listFavorite
 import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.`interface`.CallAPI.Companion.callApi
 import dd.wan.ddwanmediaplayer.activities.PlayActivity
+import dd.wan.ddwanmediaplayer.config.Constants
+import dd.wan.ddwanmediaplayer.model.offline.Podcast
 import dd.wan.ddwanmediaplayer.model.songinfo.SongInfo
 import dd.wan.ddwanmediaplayer.model.top.Song
 import kotlinx.android.synthetic.main.fragment_play.view.*
@@ -39,48 +41,54 @@ class PlayFragment : Fragment(), PlayActivity.OnDataReceivedListener {
         val position = bundle.getInt("position")
         val isFav = bundle.getBoolean("isFav")
         val song = if (online) bundle.getSerializable("song") as Song else Song()
-        setUI(view, song, position, online,isFav)
+        setUI(view, song, position, online, isFav)
         return view
     }
 
 
+    private fun setUI(view: View, song: Song, position: Int, online: Boolean, isFav: Boolean) {
 
-    private fun setUI(view: View, song: Song, position: Int, online: Boolean,isFav: Boolean) {
-        if (online) {
-            view.name.text = song.name
-            view.artists_names.text = song.artists_names
-            GlobalScope.launch { getTypeMusic(song.id,view) }
-            val linkImg = song.thumbnail.removeRange(34, 48)
-            Glide.with(this).load(linkImg).into(view.imageView)
+        if ((isFav && listFavorite[Constants.position].isOnline) || (online && !isFav)) {
+            setUpOn(view, song)
         } else {
-            val song = if(isFav){
-                listFavorite[position].song
-            }else{
-                list[position]
-            }
-            view.name.text = song.title
-            view.artists_names.text = song.artist
-            view.type.text = song.gener
-            if (song.image.isNotEmpty()) {
-                try {
-                    val image = song.image
-                    view.imageView.setImageBitmap(BitmapFactory.decodeByteArray(image,
-                        0,
-                        image.size))
-                } catch (e: Exception) {
-                    view.imageView.setImageResource(R.drawable.music_icon)
-                }
-            } else {
-                view.imageView.setImageResource(R.drawable.music_icon)
-            }
+            val podcast = if (isFav) listFavorite[position].song
+            else list[position]
+            setUpOff(view, podcast)
         }
+
         view.imageView.animation =
             AnimationUtils.loadAnimation(context, R.anim.anim_rotate)
     }
 
-    private fun getTypeMusic(id:String, view: View){
-        val call = callApi.getInfo("audio",id)
-        call.enqueue(object :Callback<SongInfo>{
+    private fun setUpOff(view: View, song:Podcast){
+        view.name.text = song.title
+        view.artists_names.text = song.artist
+        view.type.text = song.gener
+        if (song.image.isNotEmpty()) {
+            try {
+                val image = song.image
+                view.imageView.setImageBitmap(BitmapFactory.decodeByteArray(image,
+                    0,
+                    image.size))
+            } catch (e: Exception) {
+                view.imageView.setImageResource(R.drawable.music_icon)
+            }
+        } else {
+            view.imageView.setImageResource(R.drawable.music_icon)
+        }
+    }
+
+    private fun setUpOn(view: View, song:Song){
+        view.name.text = song.name
+        view.artists_names.text = song.artists_names
+        GlobalScope.launch { getTypeMusic(song.id, view) }
+        val linkImg = song.thumbnail.removeRange(34, 48)
+        Glide.with(this).load(linkImg).into(view.imageView)
+    }
+
+    private fun getTypeMusic(id: String, view: View) {
+        val call = callApi.getInfo("audio", id)
+        call.enqueue(object : Callback<SongInfo> {
             override fun onResponse(call: Call<SongInfo>, response: Response<SongInfo>) {
                 val responseBody = response.body()!!
                 view.type.text = responseBody.data.genres[1].name
@@ -92,9 +100,8 @@ class PlayFragment : Fragment(), PlayActivity.OnDataReceivedListener {
     }
 
     override fun onDataReceived(song: Song, position: Int, online: Boolean, isFav: Boolean) {
-        setUI(requireView(),song,position,online,isFav)
+        setUI(requireView(), song, position, online, isFav)
     }
-
 
 }
 

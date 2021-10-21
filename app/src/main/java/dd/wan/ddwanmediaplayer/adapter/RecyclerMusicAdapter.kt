@@ -13,7 +13,7 @@ import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.sdf
 import dd.wan.ddwanmediaplayer.model.top.Song
 
-class RecyclerMusicAdapter(var listSong:ArrayList<Song>):RecyclerView.Adapter<RecyclerMusicAdapter.ViewHolder>() {
+class RecyclerMusicAdapter(var listSong:ArrayList<Song>):RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     lateinit var context:Context
     lateinit var itemClick: (position: Int) -> Unit
@@ -31,9 +31,9 @@ class RecyclerMusicAdapter(var listSong:ArrayList<Song>):RecyclerView.Adapter<Re
         return ViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: RecyclerMusicAdapter.ViewHolder, position: Int) {
-        holder.setData()
-    }
+//    override fun onBindViewHolder(holder: RecyclerMusicAdapter.ViewHolder, position: Int) {
+//        holder.setData()
+//    }
 
     override fun getItemCount(): Int {
         return listSong.size
@@ -57,5 +57,10 @@ class RecyclerMusicAdapter(var listSong:ArrayList<Song>):RecyclerView.Adapter<Re
 
         }
 
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        if(holder is ViewHolder)
+            holder.setData()
     }
 }

@@ -6,13 +6,9 @@ import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
-import android.util.Log
 import androidx.core.app.ActivityCompat
-import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
-import dd.wan.ddwanmediaplayer.MyApplication.Companion.listFavorite
 import dd.wan.ddwanmediaplayer.R
-import dd.wan.ddwanmediaplayer.model.FavoriteSong
-import dd.wan.ddwanmediaplayer.model.offline.ReadPodcast
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.updateDataFromSdcard
 import dd.wan.ddwanmediaplayer.sql.SQLHelper
 import kotlin.system.exitProcess
 
@@ -31,11 +27,7 @@ class SplashActivity : AppCompatActivity() {
         grantResults: IntArray, ) {
         if (requestCode == 123) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                list = ReadPodcast(this).loadSong()
-                listFavorite = sql.getAll()
-                list.forEach {
-                    listFavorite.add(FavoriteSong(it,"",false))
-                }
+                updateDataFromSdcard(applicationContext)
                 Handler().postDelayed({
                     startActivity(
                         Intent(
@@ -68,11 +60,7 @@ class SplashActivity : AppCompatActivity() {
                 123
             )
         } else {
-            list = ReadPodcast(this).loadSong()
-            listFavorite = sql.getAll()
-            list.forEach {
-                listFavorite.add(FavoriteSong(it, "", false))
-            }
+            updateDataFromSdcard(applicationContext)
             Handler().postDelayed({
                 startActivity(
                     Intent(
@@ -85,4 +73,5 @@ class SplashActivity : AppCompatActivity() {
             }, 1500)
         }
     }
+
 }
