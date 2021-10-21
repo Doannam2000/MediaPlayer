@@ -6,7 +6,9 @@ import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.listFavorite
 import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.updateDataFromSdcard
 import dd.wan.ddwanmediaplayer.sql.SQLHelper
@@ -28,20 +30,20 @@ class SplashActivity : AppCompatActivity() {
         if (requestCode == 123) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 updateDataFromSdcard(applicationContext)
-                Handler().postDelayed({
-                    startActivity(
-                        Intent(
-                            this,
-                            MusicOnlineActivity::class.java
-                        )
-                    )
-                    overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
-                    finish()
-                }, 1500)
             } else {
-                finish()
-                exitProcess(0)
+                listFavorite = sql.getAll()
+                Toast.makeText(applicationContext,"Không có quyền truy cập dữ liệu trong máy !!!",Toast.LENGTH_LONG).show()
             }
+            Handler().postDelayed({
+                startActivity(
+                    Intent(
+                        this,
+                        MusicOnlineActivity::class.java
+                    )
+                )
+                overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
+                finish()
+            }, 1500)
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }

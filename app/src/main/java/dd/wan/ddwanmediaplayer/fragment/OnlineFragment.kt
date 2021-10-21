@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import dd.wan.ddwanmediaplayer.MyApplication
 import dd.wan.ddwanmediaplayer.R
@@ -56,7 +57,7 @@ class OnlineFragment : Fragment() {
         adapter.setCallback {
             dataTrans.ChangeData(check1 = true,
                 online1 = true,
-                activity1 = false,
+                activity1 = true,
                 currentTime1 = 0,
                 position1 = 0,
                 isFavorite1 = 0,
@@ -67,7 +68,7 @@ class OnlineFragment : Fragment() {
                     it1)
             }
         }
-        getData()
+        getData(view)
         view.listMusicOnline.adapter = adapter
         view.listMusicOnline.layoutManager = LinearLayoutManager(context)
 
@@ -89,10 +90,17 @@ class OnlineFragment : Fragment() {
                 position1 = 0,
                 isFavorite1 = 0,
                 song = song)
-            context?.let { it1 ->
-                Constants.getRecommendSong(true, startSer = true, MyApplication.ACTION_PLAY_SONG,
-                    it1)
+            if (Constants.isNetworkConnected(requireContext())) {
+                context?.let { it1 ->
+                    Constants.getRecommendSong(true,
+                        startSer = true,
+                        MyApplication.ACTION_PLAY_SONG,
+                        it1)
+                }
+            } else {
+                Toast.makeText(context,"Không thể kết nối internet !!!",Toast.LENGTH_LONG).show()
             }
+
         }
         view.listSearch.adapter = adapter1
         view.listSearch.layoutManager = LinearLayoutManager(context)
@@ -118,19 +126,24 @@ class OnlineFragment : Fragment() {
         return view
     }
 
-    private fun getData() {
-        val retrofitData = CallAPI.callApi.getTopMusic(0, 0, 0, "song", -1)
-        retrofitData.enqueue(object : Callback<Music> {
-            override fun onResponse(call: Call<Music>, response: Response<Music>) {
-                val responseBody = response.body()!!
-                listSong.addAll(responseBody.data.song)
-                view?.progressBar?.visibility = View.GONE
-                adapter.notifyDataSetChanged()
-            }
+    private fun getData(view: View) {
+        if (Constants.isNetworkConnected(requireContext())) {
+            val retrofitData = CallAPI.callApi.getTopMusic(0, 0, 0, "song", -1)
+            retrofitData.enqueue(object : Callback<Music> {
+                override fun onResponse(call: Call<Music>, response: Response<Music>) {
+                    val responseBody = response.body()!!
+                    listSong.addAll(responseBody.data.song)
+                    view.progressBar?.visibility = View.GONE
+                    adapter.notifyDataSetChanged()
+                }
 
-            override fun onFailure(call: Call<Music>, t: Throwable) {
-            }
-        })
+                override fun onFailure(call: Call<Music>, t: Throwable) {
+                }
+            })
+        } else {
+            view.progressBar?.visibility = View.GONE
+            Toast.makeText(context, "Không thể kết nối internet !!!", Toast.LENGTH_LONG).show()
+        }
     }
 
     fun search() {
@@ -146,7 +159,7 @@ class OnlineFragment : Fragment() {
                 override fun onResponse(call: Call<Search>, response: Response<Search>) {
                     val responseBody = response.body()!!
                     list.clear()
-                    if(responseBody.data.isNotEmpty())
+                    if (responseBody.data.isNotEmpty())
                         list.addAll(responseBody.data[0].song)
                     adapter1.notifyDataSetChanged()
                     view?.progressBar?.visibility = View.GONE

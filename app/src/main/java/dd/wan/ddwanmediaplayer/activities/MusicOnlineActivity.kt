@@ -48,6 +48,11 @@ import java.lang.Exception
 class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
 
 
+    override fun onResume() {
+        super.onResume()
+        getCurrentSong(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_music_online)
@@ -111,108 +116,108 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
                         startService(intent2)
                     }
                 }
-            true
+                true
+            }
         }
+
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
+
     }
 
-    LocalBroadcastManager.getInstance(this)
-    .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
-    LocalBroadcastManager.getInstance(this)
-    .registerReceiver(broadcastPlay, IntentFilter("Pause_Play"))
 
-}
-
-
-private fun updateUI() {
-    if ((isFavorite && listFavorite[position].isOnline) || (online && !isFavorite)) {
-        nameSong.text = song.name
-        nameAuth.text = song.artists_names
-        Glide.with(applicationContext).load(song.thumbnail).into(imageP)
-        if (check)
-            btnPlayN.setImageResource(R.drawable.ic_baseline_pause_24)
-        else
-            btnPlayN.setImageResource(R.drawable.ic_outline_play_arrow_24)
-    } else {
-        val podcast = if (isFavorite) {
-            listFavorite[position].song
+    private fun updateUI() {
+        if ((isFavorite && listFavorite[position].isOnline) || (online && !isFavorite)) {
+            nameSong.text = song.name
+            nameAuth.text = song.artists_names
+            Glide.with(applicationContext).load(song.thumbnail).into(imageP)
+            if (check)
+                btnPlayN.setImageResource(R.drawable.ic_baseline_pause_24)
+            else
+                btnPlayN.setImageResource(R.drawable.ic_outline_play_arrow_24)
         } else {
-            list[position]
-        }
-        nameSong.text = podcast.title
-        nameAuth.text = podcast.artist
-        if (podcast.image.isNotEmpty()) {
-            try {
-                val image = podcast.image
-                imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
-            } catch (e: Exception) {
+            val podcast = if (isFavorite) {
+                listFavorite[position].song
+            } else {
+                list[position]
+            }
+            nameSong.text = podcast.title
+            nameAuth.text = podcast.artist
+            if (podcast.image.isNotEmpty()) {
+                try {
+                    val image = podcast.image
+                    imageP.setImageBitmap(BitmapFactory.decodeByteArray(image, 0, image.size))
+                } catch (e: Exception) {
+                    imageP.setImageResource(R.drawable.music_icon)
+                }
+            } else {
                 imageP.setImageResource(R.drawable.music_icon)
             }
-        } else {
-            imageP.setImageResource(R.drawable.music_icon)
+        }
+
+    }
+
+    private val broadcastPlay = object : BroadcastReceiver() {
+        override fun onReceive(p0: Context?, p1: Intent?) {
+            check = p1!!.extras!!.getBoolean("checked")
+            if (check)
+                btnPlayN.setImageResource(R.drawable.ic_baseline_pause_24)
+            else
+                btnPlayN.setImageResource(R.drawable.ic_outline_play_arrow_24)
         }
     }
 
-}
-
-private val broadcastPlay = object : BroadcastReceiver() {
-    override fun onReceive(p0: Context?, p1: Intent?) {
-        check = p1!!.extras!!.getBoolean("checked")
-        if (check)
-            btnPlayN.setImageResource(R.drawable.ic_baseline_pause_24)
-        else
-            btnPlayN.setImageResource(R.drawable.ic_outline_play_arrow_24)
-    }
-}
-
-private val broadcastPodcast = object : BroadcastReceiver() {
-    override fun onReceive(p0: Context?, p1: Intent?) {
-        val bundle = p1?.extras
-        if (bundle == null)
-            return
-        else {
-            updateUI()
+    private val broadcastPodcast = object : BroadcastReceiver() {
+        override fun onReceive(p0: Context?, p1: Intent?) {
+            val bundle = p1?.extras
+            if (bundle == null)
+                return
+            else {
+                updateUI()
+            }
         }
     }
-}
 
 
-override fun onDestroy() {
-    super.onDestroy()
-    LocalBroadcastManager.getInstance(this)
-        .unregisterReceiver(broadcastPodcast)
-    LocalBroadcastManager.getInstance(this)
-        .unregisterReceiver(broadcastPlay)
-}
+    override fun onDestroy() {
+        super.onDestroy()
+        LocalBroadcastManager.getInstance(this)
+            .unregisterReceiver(broadcastPodcast)
+        LocalBroadcastManager.getInstance(this)
+            .unregisterReceiver(broadcastPlay)
+    }
 
-override fun ChangeData(
-    check1: Boolean,
-    online1: Boolean,
-    activity1: Boolean,
-    currentTime1: Int,
-    position1: Int,
-    isFavorite1: Int,
-    song: Song,
-) {
-    check = check1
-    online = online1
-    activity = activity1
-    currentTime = currentTime1
-    if (isFavorite1 == 1) {
-        isFavorite = true
-        listRecommendMusic.clear()
-        listFavorite.forEach {
-            listRecommendMusic.add(Constants.getFavoriteSong(it))
-        }
-    } else
-        isFavorite = false
+    override fun ChangeData(
+        check1: Boolean,
+        online1: Boolean,
+        activity1: Boolean,
+        currentTime1: Int,
+        position1: Int,
+        isFavorite1: Int,
+        song: Song,
+    ) {
+        check = check1
+        online = online1
+        activity = activity1
+        currentTime = currentTime1
+        if (isFavorite1 == 1) {
+            isFavorite = true
+            listRecommendMusic.clear()
+            listFavorite.forEach {
+                listRecommendMusic.add(Constants.getFavoriteSong(it))
+            }
+        } else
+            isFavorite = false
 
-    position = position1
-    if (online)
-        Constants.song = song
-    updateUI()
-}
+        position = position1
+        if (online)
+            Constants.song = song
+        updateUI()
+    }
 
-override fun onBackPressed() {
-    finish()
-}
+    override fun onBackPressed() {
+        finish()
+    }
 }

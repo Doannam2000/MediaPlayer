@@ -121,11 +121,7 @@ class MyService : Service() {
                 nextSong()
             }
             ACTION_STOP_SONG -> {
-                mediaPlayer.stop()
-                check = false
-                sharedPreferences.edit().putInt("timer", 0).apply()
-                playOrPause(check = false, exit = true)
-                stopSelf()
+                stopService()
             }
             ACTION_TIMER -> {
                 if (checkTimer) {
@@ -163,12 +159,24 @@ class MyService : Service() {
     }
 
     fun previous() {
+        if(!isFavorite && online){
+            if (!Constants.isNetworkConnected(applicationContext)) {
+                stopService()
+            }
+        }
         if (shuffle) {
             randomSong()
         } else {
             position--
             if ((isFavorite && position >= listFavorite.size) || (online && position >= listRecommendMusic.size) || (!online && position >= list.size))
                 position --
+            if(isFavorite){
+                while(!Constants.isNetworkConnected(applicationContext) && listFavorite[position].isOnline) {
+                    position--
+                    if (position<0)
+                        position = listFavorite.size - 1
+                }
+            }
             if (position < 0) {
                 position = if (isFavorite)
                     listFavorite.size - 1
@@ -198,12 +206,24 @@ class MyService : Service() {
     }
 
     fun nextSong() {
+        if(!isFavorite && online){
+            if (!Constants.isNetworkConnected(applicationContext)) {
+                stopService()
+            }
+        }
         if (shuffle) {
             randomSong()
         } else {
             position++
             if ((isFavorite && position >= listFavorite.size) || (online && position >= listRecommendMusic.size) || (!online && position >= list.size))
                 position = 0
+            if(isFavorite){
+                while(!Constants.isNetworkConnected(applicationContext) && listFavorite[position].isOnline) {
+                    position++
+                    if (position>= listFavorite.size)
+                        position = 0
+                }
+            }
         }
         currentTime = 0
         playSong()
@@ -211,14 +231,21 @@ class MyService : Service() {
         sendDataToActivity()
     }
 
+    fun stopService(){
+        mediaPlayer.stop()
+        check = false
+        val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putInt("timer", 0).apply()
+        playOrPause(check = false, exit = true)
+        stopSelf()
+    }
 
     @SuppressLint("RemoteViewLayout")
 
     fun createNotification() {
         val intent = Intent(this, PlayActivity::class.java)
         check = mediaPlayer.isPlaying
-        val pendingIntent =
-            PendingIntent.getActivity(
+        val pendingIntent = PendingIntent.getActivity(
                 this,
                 123,
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK),
@@ -416,7 +443,7 @@ class MyService : Service() {
             }
         }
         position = random.nextInt(size)
-        while (arrayPlayed.contains(position)) {
+        while (arrayPlayed.contains(position) || (isFavorite && !Constants.isNetworkConnected(applicationContext) && listFavorite[position].isOnline)) {
             position = random.nextInt(size)
         }
         arrayPlayed.add(position)

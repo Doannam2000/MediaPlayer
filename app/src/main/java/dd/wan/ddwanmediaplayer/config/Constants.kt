@@ -25,6 +25,10 @@ import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.Broadcast
 import dd.wan.ddwanmediaplayer.sql.SQLHelper
 import java.text.SimpleDateFormat
+import androidx.core.content.ContextCompat.getSystemService
+
+import android.net.ConnectivityManager
+import androidx.core.content.ContextCompat
 
 
 class Constants {
@@ -51,7 +55,8 @@ class Constants {
             retrofit.enqueue(object : Callback<RecommendMusic> {
                 override fun onResponse(
                     call: Call<RecommendMusic>,
-                    response: Response<RecommendMusic>) {
+                    response: Response<RecommendMusic>,
+                ) {
                     val responseBody = response.body()!!
                     uri = song.id
                     position = 0
@@ -148,6 +153,10 @@ class Constants {
             MyApplication.list.forEach {
                 MyApplication.listFavorite.add(FavoriteSong(it, "", false))
             }
+        }
+        fun isNetworkConnected(context: Context): Boolean {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
+            return cm!!.activeNetworkInfo != null && cm.activeNetworkInfo!!.isConnected
         }
     }
 }

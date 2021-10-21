@@ -26,6 +26,7 @@ import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.widget.Toast
+import dd.wan.ddwanmediaplayer.MyApplication
 import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.`interface`.DataFragToAct
 import dd.wan.ddwanmediaplayer.adapter.ViewPagerAdapter
@@ -117,6 +118,11 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
                 seekBar.progress = currentTime
                 time1.text = sdf.format(currentTime)
                 dataListener!!.onDataReceived(song, position, online, isFavorite)
+                checkDownload()
+                if(!checkDownload){
+                    btnFav.isEnabled = false
+                    btnFav.alpha = 0.5F
+                }
             }
         }
     }
@@ -152,11 +158,11 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
             if (id == download) {
                 Toast.makeText(applicationContext, "Tải xuống thành công", Toast.LENGTH_SHORT)
                     .show()
+                list = ReadPodcast(applicationContext).loadSong()
                 SQLHelper(applicationContext).deleteDB(song.id)
-                listFavorite.clear()
-                Constants.updateDataFromSdcard(applicationContext)
-                if(isFavorite)
-                    viewPager.currentItem = 0
+                btnFav.isEnabled = false
+                btnFav.alpha = 0.5F
+                checkDownload()
             }
         }
     }
@@ -204,18 +210,22 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
 
         btnDownload.setOnClickListener {
             if (checkDownload) {
-                Toast.makeText(this, "Đang tải xuống", Toast.LENGTH_SHORT).show()
-                val ur = "https://api.mp3.zing.vn/api/streaming/audio/${song.id}/320"
-                val request = DownloadManager.Request(Uri.parse(ur))
-                    .setTitle("Đang tải xuống")
-                    .setDescription(song.name)
-                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
-                    .setAllowedOverMetered(true)
-                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
-                        song.name + "_" + song.id + ".mp3")
-                val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                download = downloadManager.enqueue(request)
-                checkDownload = false
+                if ((online && !isFavorite) || (isFavorite && listFavorite[position].isOnline)) {
+                    Toast.makeText(this, "Đang tải xuống", Toast.LENGTH_SHORT).show()
+                    val ur = "https://api.mp3.zing.vn/api/streaming/audio/${song.id}/320"
+                    var string = song.name.filter { it.isLetterOrDigit() }
+                    val request = DownloadManager.Request(Uri.parse(ur))
+                        .setTitle("Đang tải xuống")
+                        .setDescription(song.name)
+                        .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+                        .setAllowedOverMetered(true)
+                        .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
+                            string + "_" + song.id + ".mp3")
+                    val downloadManager =
+                        getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                    download = downloadManager.enqueue(request)
+                    checkDownload = false
+                }
             } else
                 Toast.makeText(this, "Bài hát đã có trong máy", Toast.LENGTH_SHORT).show()
         }
@@ -312,7 +322,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
 
         })
         updateUI()
-
+        checkDownload()
         // setUp Hẹn giờ
         btnClock.setOnClickListener {
             val bottom = BottomSheetDialog(this, R.style.bottomSheetDialog)
@@ -436,6 +446,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
             }
         }
 
+
         // register broadcast
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(broadcastPodcast, IntentFilter("Current_Song"))
@@ -465,7 +476,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
             else
                 btnFav.alpha = 0.5F
         } else {
-            if(isFavorite)
+            if (isFavorite)
                 setUIOffline(listFavorite[position].song)
             else
                 setUIOffline(list[position])
@@ -527,6 +538,11 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
         isFavorite = isFav
         mySerVice.play()
         updateUI()
+        checkDownload()
+        if(!checkDownload){
+            btnFav.isEnabled = false
+            btnFav.alpha = 0.5F
+        }
         dataListener!!.onDataReceived(song, position, online, isFavorite)
         viewPager.currentItem = 0
     }
@@ -544,5 +560,14 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
         }
     }
 
+    fun checkDownload() {
+        list.forEach {
+            if (it.uri.contains(song.id)) {
+                checkDownload = false
+                return
+            }
+        }
+        checkDownload = true
+    }
 
 }

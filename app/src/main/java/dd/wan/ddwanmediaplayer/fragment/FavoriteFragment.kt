@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import dd.wan.ddwanmediaplayer.MyApplication
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.listFavorite
@@ -18,6 +19,7 @@ import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.`interface`.DataTransmission
 import dd.wan.ddwanmediaplayer.activities.PlayActivity
 import dd.wan.ddwanmediaplayer.adapter.RecyclerFavoriteMusic
+import dd.wan.ddwanmediaplayer.config.Constants
 import dd.wan.ddwanmediaplayer.model.FavoriteSong
 import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.MyService
@@ -54,9 +56,9 @@ class FavoriteFragment : Fragment() {
     ): View? {
         var view = inflater.inflate(R.layout.fragment_favorite, container, false)
         view.list_Favorite.layoutManager = LinearLayoutManager(context)
-        adapter= RecyclerFavoriteMusic(MyApplication.listFavorite)
+        adapter= RecyclerFavoriteMusic(listFavorite)
         adapter.setCallback {
-            val favoriteMusic = MyApplication.listFavorite[it]
+            val favoriteMusic = listFavorite[it]
             var song = Song()
             if (favoriteMusic.isOnline) {
                 song.name = favoriteMusic.song.title
@@ -68,26 +70,28 @@ class FavoriteFragment : Fragment() {
             dataTrans.ChangeData(
                 check1 = true,
                 online1 = favoriteMusic.isOnline,
-                activity1 = false,
+                activity1 = true,
                 currentTime1 = 0,
                 position1 = it,
                 isFavorite1 = 1,
                 song
             )
+            if(Constants.isNetworkConnected(requireContext()) && favoriteMusic.isOnline || !favoriteMusic.isOnline) {
+                val bundle1 = Bundle()
+                bundle1.putInt("action", MyApplication.ACTION_PLAY_SONG)
+                val intent11 = Intent(context, MyService::class.java)
+                intent11.putExtras(bundle1)
+                context?.startService(intent11)!!
 
-            val bundle1 = Bundle()
-            bundle1.putInt("action", MyApplication.ACTION_PLAY_SONG)
-            val intent11 = Intent(context, MyService::class.java)
-            intent11.putExtras(bundle1)
-            context?.startService(intent11)!!
-
-            val intent = Intent(context, PlayActivity::class.java)
-            intent.putExtras(bundle1)
-            val options = ActivityOptions.makeCustomAnimation(context,
-                R.anim.right_to_left,
-                R.anim.right_to_left_out)
-            startActivity(intent, options.toBundle())
-
+                val intent = Intent(context, PlayActivity::class.java)
+                intent.putExtras(bundle1)
+                val options = ActivityOptions.makeCustomAnimation(context,
+                    R.anim.right_to_left,
+                    R.anim.right_to_left_out)
+                startActivity(intent, options.toBundle())
+            }else{
+                Toast.makeText(context,"Không thể kết nối internet !!!",Toast.LENGTH_LONG).show()
+            }
         }
         view.list_Favorite.adapter = adapter
         listP.addAll(listFavorite)
