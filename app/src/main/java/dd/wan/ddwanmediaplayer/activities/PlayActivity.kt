@@ -214,7 +214,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
                     val ur = "https://api.mp3.zing.vn/api/streaming/audio/${song.id}/320"
                     val name = song.name.filter { it.isLetterOrDigit() } + "_" + song.id + ".mp3"
                     val request = DownloadManager.Request(Uri.parse(ur))
-                        .setTitle("Đang tải xuống")
+                        .setTitle(name)
                         .setDescription(song.name)
                         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
                         .setAllowedOverMetered(true)
