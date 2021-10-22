@@ -47,7 +47,6 @@ class PlayFragment : Fragment(), PlayActivity.OnDataReceivedListener {
 
 
     private fun setUI(view: View, song: Song, position: Int, online: Boolean, isFav: Boolean) {
-
         if ((isFav && listFavorite[Constants.position].isOnline) || (online && !isFav)) {
             setUpOn(view, song)
         } else {
@@ -55,7 +54,6 @@ class PlayFragment : Fragment(), PlayActivity.OnDataReceivedListener {
             else list[position]
             setUpOff(view, podcast)
         }
-
         view.imageView.animation =
             AnimationUtils.loadAnimation(context, R.anim.anim_rotate)
     }

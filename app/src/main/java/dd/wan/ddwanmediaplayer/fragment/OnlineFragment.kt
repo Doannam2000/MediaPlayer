@@ -146,7 +146,7 @@ class OnlineFragment : Fragment() {
         }
     }
 
-    fun search() {
+    private fun search() {
         Log.d("checkList query", query)
         if (query == "") {
             requireView().listSearch.visibility = View.GONE

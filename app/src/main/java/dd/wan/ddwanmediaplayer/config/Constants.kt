@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat.getSystemService
 
 import android.net.ConnectivityManager
 import androidx.core.content.ContextCompat
+import java.lang.Exception
 
 
 class Constants {
@@ -50,7 +51,7 @@ class Constants {
         @SuppressLint("SimpleDateFormat")
         val sdf = SimpleDateFormat("mm:ss")
 
-        fun getRecommendSong(startAc: Boolean, startSer: Boolean,ac:Int, context: Context) {
+        fun getRecommendSong(startAc: Boolean, startSer: Boolean, ac: Int, context: Context) {
             val retrofit = CallAPI.callApi.getRecommendSong("audio", song.id)
             retrofit.enqueue(object : Callback<RecommendMusic> {
                 override fun onResponse(
@@ -119,7 +120,7 @@ class Constants {
             } else {
                 if (ac == MyApplication.ACTION_PAUSE_OR_PLAY)
                     bundle.putInt("action", MyApplication.ACTION_PLAY_SONG)
-                 else
+                else
                     bundle.putInt("action", ac)
                 val intent = Intent(context, MyService::class.java)
                 intent.putExtras(bundle)
@@ -137,7 +138,8 @@ class Constants {
             }
             return false
         }
-        fun getFavoriteSong(favoriteMusic:FavoriteSong):Song{
+
+        fun getFavoriteSong(favoriteMusic: FavoriteSong): Song {
             val song1 = Song()
             song1.name = favoriteMusic.song.title
             song1.id = favoriteMusic.song.uri
@@ -147,16 +149,22 @@ class Constants {
             return song1
         }
 
-        fun updateDataFromSdcard(context: Context){
-            MyApplication.list = ReadPodcast(context ).loadSong()
+        fun updateDataFromSdcard(context: Context) {
+            MyApplication.list = ReadPodcast(context).loadSong()
             MyApplication.listFavorite = SQLHelper(context).getAll()
             MyApplication.list.forEach {
                 MyApplication.listFavorite.add(FavoriteSong(it, "", false))
             }
         }
+
         fun isNetworkConnected(context: Context): Boolean {
-            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
-            return cm!!.activeNetworkInfo != null && cm.activeNetworkInfo!!.isConnected
+            return try {
+                val cm =
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
+                 cm!!.activeNetworkInfo != null && cm.activeNetworkInfo!!.isConnected
+            }catch (e:Exception){
+                false
+            }
         }
     }
 }

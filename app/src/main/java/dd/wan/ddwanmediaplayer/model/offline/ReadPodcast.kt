@@ -24,27 +24,33 @@ class ReadPodcast(var context: Context) {
         )
         if (rs != null) {
             while (rs!!.moveToNext()) {
-                var uri = rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.DATA))
-                var title = rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.TITLE))
-                var artist = rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.ARTIST))
-                var duration =
-                    rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.DURATION)) as String
-                var media = MediaMetadataRetriever()
-                var gener = ""
                 try {
-                    media.setDataSource(uri)
-                    gener = media.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE).toString()
-                } catch (e: Exception) {
-                }
-                var bitmap: ByteArray = try {
-                    if (media.embeddedPicture != null) {
-                        media.embeddedPicture!!
-                    } else
+                    var uri = rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.DATA))
+                    var title = rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.TITLE))
+                    var artist =
+                        rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.ARTIST))
+                    var duration =
+                        rs.getString(rs.getColumnIndex(MediaStore.Audio.Media.DURATION)) as String
+                    var media = MediaMetadataRetriever()
+                    var gener = " "
+                    try {
+                        media.setDataSource(uri)
+                        gener = media.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE)
+                            .toString()
+                    } catch (e: Exception) {
+                    }
+                    var bitmap: ByteArray = try {
+                        if (media.embeddedPicture != null) {
+                            media.embeddedPicture!!
+                        } else
+                            byteArrayOf()
+                    } catch (e: Exception) {
                         byteArrayOf()
+                    }
+                    list.add(Podcast(uri, title, artist, bitmap, duration.toInt(), gener))
                 } catch (e: Exception) {
-                    byteArrayOf()
+
                 }
-                list.add(Podcast(uri, title, artist, bitmap, duration.toInt(),gener))
             }
         }
         return list

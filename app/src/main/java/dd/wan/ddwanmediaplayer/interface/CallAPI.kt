@@ -19,27 +19,15 @@ interface CallAPI {
 
     companion object {
 
-        private var tlsSpecs = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            listOf(ConnectionSpec.COMPATIBLE_TLS);
-        } else {
-            listOf(ConnectionSpec.MODERN_TLS)
-        }
-
-        var client = OkHttpClient.Builder()
-            .connectionSpecs(tlsSpecs)
-            .build()
-
         val callApi = Retrofit.Builder()
             .addConverterFactory(GsonConverterFactory.create())
             .baseUrl(Constants.BASE_URL)
-            .client(client)
             .build()
             .create(CallAPI::class.java)
 
         val callSearchSong = Retrofit.Builder()
             .addConverterFactory(GsonConverterFactory.create())
             .baseUrl(Constants.BASE_URL_SEARCH)
-            .client(client)
             .build()
             .create(CallAPI::class.java)
     }
