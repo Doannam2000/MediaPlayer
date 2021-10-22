@@ -69,7 +69,6 @@ class OnlineFragment : Fragment() {
                     it1)
             }
         }
-        Log.d("hihihihihihihi",listSong.size.toString())
         if(listSong.size==0)
             getData(view)
         else

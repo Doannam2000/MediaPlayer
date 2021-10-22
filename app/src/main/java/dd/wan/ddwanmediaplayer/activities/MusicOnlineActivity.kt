@@ -53,6 +53,8 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
         super.onResume()
         updateUI()
         exit = 0
+        if (getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).getString("Uri", "") != "")
+            layout_music_play.visibility = View.VISIBLE
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,7 +70,8 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
         layout_music_play.visibility = View.VISIBLE
 
         if (getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).getString("Uri",
-                "") == "") {
+                "") == ""
+        ) {
             layout_music_play.visibility = View.GONE
         } else {
             getCurrentSong(this)
@@ -77,6 +80,11 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
             }
         }
         updateUI()
+
+        btnExit.setOnClickListener {
+            connectService(MyApplication.ACTION_STOP_SONG, this)
+            layout_music_play.visibility = View.GONE
+        }
 
         btnNextN.setOnClickListener { connectService(MyApplication.ACTION_NEXT_SONG, this) }
         btnPrevious.setOnClickListener {
@@ -218,12 +226,12 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
 
     override fun onBackPressed() {
         exit++
-        if(exit == 1)
-            Toast.makeText(applicationContext,"Nhấn back thêm 1 lần để thoát",Toast.LENGTH_SHORT).show()
-        else
-        {
+        if (exit == 1)
+            Toast.makeText(applicationContext, "Nhấn back thêm 1 lần để thoát", Toast.LENGTH_SHORT)
+                .show()
+        else {
             var homeIntent = Intent(Intent.ACTION_MAIN)
-            homeIntent.addCategory( Intent.CATEGORY_HOME )
+            homeIntent.addCategory(Intent.CATEGORY_HOME)
             homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
             startActivity(homeIntent)
         }
