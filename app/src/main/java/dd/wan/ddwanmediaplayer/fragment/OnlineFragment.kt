@@ -90,6 +90,7 @@ class OnlineFragment : Fragment() {
                 position1 = 0,
                 isFavorite1 = 0,
                 song = song)
+            view.progressBar.visibility = View.VISIBLE
             if (Constants.isNetworkConnected(requireContext())) {
                 context?.let { it1 ->
                     Constants.getRecommendSong(true,

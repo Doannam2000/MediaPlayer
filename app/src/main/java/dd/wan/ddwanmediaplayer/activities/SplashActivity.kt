@@ -19,6 +19,7 @@ class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
+        supportActionBar?.hide()
         sql = SQLHelper(this)
         requestPermission()
     }
@@ -43,7 +44,7 @@ class SplashActivity : AppCompatActivity() {
                 )
                 overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
                 finish()
-            }, 1500)
+            }, 800)
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
@@ -72,7 +73,7 @@ class SplashActivity : AppCompatActivity() {
                 )
                 overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
                 finish()
-            }, 1500)
+            }, 800)
         }
     }
 

@@ -56,6 +56,7 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_music_online)
+        supportActionBar?.hide()
 
         var navHostFragment =
             supportFragmentManager.findFragmentById(R.id.fragmentContainerView) as NavHostFragment

@@ -169,6 +169,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_play)
+        supportActionBar?.hide()
         val sharedPreferences = getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE)
         val edit = sharedPreferences.edit()
         timer = sharedPreferences.getInt("timer", 0)
