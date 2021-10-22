@@ -83,6 +83,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="2"
+            android:layout_marginRight="20dp"
             android:gravity="right">
 
             <ImageView
@@ -108,12 +109,6 @@
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_outline_skip_next_24" />
 
-            <ImageView
-                android:id="@+id/btnExit"
-                android:layout_width="35dp"
-                android:layout_height="match_parent"
-                android:layout_marginRight="10dp"
-                android:src="@drawable/ic_outline_clear_24" />
         </LinearLayout>
     </LinearLayout>
 

@@ -20,6 +20,7 @@ import dd.wan.ddwanmediaplayer.`interface`.DataTransmission
 import dd.wan.ddwanmediaplayer.adapter.RecyclerMusicAdapter
 import dd.wan.ddwanmediaplayer.adapter.RecyclerSearch
 import dd.wan.ddwanmediaplayer.config.Constants
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.listSong
 import dd.wan.ddwanmediaplayer.model.search.Search
 import dd.wan.ddwanmediaplayer.model.top.Music
 import dd.wan.ddwanmediaplayer.model.top.Song
@@ -31,7 +32,7 @@ import retrofit2.Response
 
 class OnlineFragment : Fragment() {
 
-    var listSong = ArrayList<Song>()
+
     var list = ArrayList<dd.wan.ddwanmediaplayer.model.search.Song>()
     lateinit var adapter: RecyclerMusicAdapter
     lateinit var adapter1: RecyclerSearch
@@ -68,7 +69,11 @@ class OnlineFragment : Fragment() {
                     it1)
             }
         }
-        getData(view)
+        Log.d("hihihihihihihi",listSong.size.toString())
+        if(listSong.size==0)
+            getData(view)
+        else
+            view.progressBar.visibility = View.GONE
         view.listMusicOnline.adapter = adapter
         view.listMusicOnline.layoutManager = LinearLayoutManager(context)
 

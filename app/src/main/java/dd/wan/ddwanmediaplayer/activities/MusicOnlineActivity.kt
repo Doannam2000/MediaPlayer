@@ -8,6 +8,7 @@ import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
@@ -35,22 +36,23 @@ import dd.wan.ddwanmediaplayer.config.Constants.Companion.position
 import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.MyService
 import kotlinx.android.synthetic.main.activity_music_online.*
-import kotlinx.android.synthetic.main.activity_music_online.btnExit
 import kotlinx.android.synthetic.main.activity_music_online.btnNextN
 import kotlinx.android.synthetic.main.activity_music_online.btnPlayN
 import kotlinx.android.synthetic.main.activity_music_online.btnPrevious
 import kotlinx.android.synthetic.main.activity_music_online.imageP
 import kotlinx.android.synthetic.main.activity_music_online.nameAuth
 import kotlinx.android.synthetic.main.activity_music_online.nameSong
-import kotlinx.android.synthetic.main.activity_play.*
 import java.lang.Exception
+import kotlin.system.exitProcess
 
 class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
 
+    var exit = 0
 
     override fun onResume() {
         super.onResume()
-        getCurrentSong(this)
+        updateUI()
+        exit = 0
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,8 +68,7 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
         layout_music_play.visibility = View.VISIBLE
 
         if (getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).getString("Uri",
-                "") == ""
-        ) {
+                "") == "") {
             layout_music_play.visibility = View.GONE
         } else {
             getCurrentSong(this)
@@ -77,10 +78,6 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
         }
         updateUI()
 
-        btnExit.setOnClickListener {
-            connectService(MyApplication.ACTION_STOP_SONG, this)
-            layout_music_play.visibility = View.GONE
-        }
         btnNextN.setOnClickListener { connectService(MyApplication.ACTION_NEXT_SONG, this) }
         btnPrevious.setOnClickListener {
             connectService(MyApplication.ACTION_PREVIOUS_SONG, this)
@@ -215,10 +212,20 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
         position = position1
         if (online)
             Constants.song = song
+        layout_music_play.visibility = View.VISIBLE
         updateUI()
     }
 
     override fun onBackPressed() {
-        finish()
+        exit++
+        if(exit == 1)
+            Toast.makeText(applicationContext,"Nhấn back thêm 1 lần để thoát",Toast.LENGTH_SHORT).show()
+        else
+        {
+            var homeIntent = Intent(Intent.ACTION_MAIN)
+            homeIntent.addCategory( Intent.CATEGORY_HOME )
+            homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+            startActivity(homeIntent)
+        }
     }
 }

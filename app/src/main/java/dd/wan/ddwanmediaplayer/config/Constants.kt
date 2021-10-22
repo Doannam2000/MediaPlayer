@@ -46,7 +46,7 @@ class Constants {
         var isFavorite = false
         var song = Song()
         var uri = ""
-
+        var listSong = ArrayList<Song>()
 
         @SuppressLint("SimpleDateFormat")
         val sdf = SimpleDateFormat("mm:ss")
