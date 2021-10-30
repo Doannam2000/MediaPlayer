@@ -26,6 +26,9 @@ import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.widget.Toast
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.listRecommendMusic
 import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.`interface`.DataFragToAct
 import dd.wan.ddwanmediaplayer.adapter.ViewPagerAdapter
@@ -38,15 +41,13 @@ import dd.wan.ddwanmediaplayer.config.Constants.Companion.timer
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.sdf
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.currentTime
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.isFavorite
-import dd.wan.ddwanmediaplayer.config.Constants.Companion.listRecommendMusic
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.song
 import dd.wan.ddwanmediaplayer.model.FavoriteSong
 import dd.wan.ddwanmediaplayer.model.offline.Podcast
-import dd.wan.ddwanmediaplayer.model.offline.ReadPodcast
 import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.MyService
 import dd.wan.ddwanmediaplayer.sql.SQLHelper
-import java.io.File
+import dd.wan.ddwanmediaplayer.viewmodel.MyViewModel
 
 
 class PlayActivity : AppCompatActivity(), DataFragToAct {
@@ -62,6 +63,9 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
     var checkFavorite = false
     var checkDownload = true
     private var dataListener: OnDataReceivedListener? = null
+    val model by lazy {
+        ViewModelProvider(this).get(MyViewModel::class.java)
+    }
 
     interface OnDataReceivedListener {
         fun onDataReceived(song: Song, position: Int, online: Boolean, isFav: Boolean)
@@ -70,6 +74,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
     fun setListener(listener: OnDataReceivedListener?) {
         dataListener = listener
     }
+
 
 
     var run = object : Runnable {
@@ -157,7 +162,7 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
             if (id == download) {
                 Toast.makeText(applicationContext, "Tải xuống thành công", Toast.LENGTH_SHORT)
                     .show()
-                list = ReadPodcast(applicationContext).loadSong()
+                model.getPodcast(applicationContext)
                 SQLHelper(applicationContext).deleteDB(song.id)
                 btnFav.isEnabled = false
                 btnFav.alpha = 0.5F
@@ -446,6 +451,9 @@ class PlayActivity : AppCompatActivity(), DataFragToAct {
             }
         }
 
+        model.listOffline.observe(this, Observer {
+            list = it
+        })
 
         // register broadcast
         LocalBroadcastManager.getInstance(this)

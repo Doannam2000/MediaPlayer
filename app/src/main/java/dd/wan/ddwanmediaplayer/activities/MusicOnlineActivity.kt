@@ -1,5 +1,6 @@
 package dd.wan.ddwanmediaplayer.activities
 
+import android.app.ActivityOptions
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -9,15 +10,17 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.bumptech.glide.Glide
 import dd.wan.ddwanmediaplayer.MyApplication
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_CHANGE
-import dd.wan.ddwanmediaplayer.MyApplication.Companion.ACTION_PLAY_SONG
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.listFavorite
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.listRecommendMusic
 import dd.wan.ddwanmediaplayer.R
 import dd.wan.ddwanmediaplayer.`interface`.DataTransmission
 import dd.wan.ddwanmediaplayer.config.Constants
@@ -25,16 +28,16 @@ import dd.wan.ddwanmediaplayer.config.Constants.Companion.currentTime
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.check
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.connectService
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.getCurrentSong
-import dd.wan.ddwanmediaplayer.config.Constants.Companion.getRecommendSong
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.online
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.song
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.activity
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.isFavorite
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.isMyServiceRunning
-import dd.wan.ddwanmediaplayer.config.Constants.Companion.listRecommendMusic
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.position
+import dd.wan.ddwanmediaplayer.config.Constants.Companion.uri
 import dd.wan.ddwanmediaplayer.model.top.Song
 import dd.wan.ddwanmediaplayer.service.MyService
+import dd.wan.ddwanmediaplayer.viewmodel.MyViewModel
 import kotlinx.android.synthetic.main.activity_music_online.*
 import kotlinx.android.synthetic.main.activity_music_online.btnNextN
 import kotlinx.android.synthetic.main.activity_music_online.btnPlayN
@@ -42,12 +45,17 @@ import kotlinx.android.synthetic.main.activity_music_online.btnPrevious
 import kotlinx.android.synthetic.main.activity_music_online.imageP
 import kotlinx.android.synthetic.main.activity_music_online.nameAuth
 import kotlinx.android.synthetic.main.activity_music_online.nameSong
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.lang.Exception
-import kotlin.system.exitProcess
 
 class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
 
-    var exit = 0
+    private var exit = 0
+    val model by lazy {
+        ViewModelProvider(this).get(MyViewModel::class.java)
+    }
 
     override fun onResume() {
         super.onResume()
@@ -66,19 +74,23 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
             supportFragmentManager.findFragmentById(R.id.fragmentContainerView) as NavHostFragment
         var controller = navHostFragment.navController
         bottomNavigationView.setupWithNavController(controller)
-
         layout_music_play.visibility = View.VISIBLE
 
-        if (getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).getString("Uri",
-                "") == ""
-        ) {
+        model.listMusic.observe(this, Observer { data ->
+            listRecommendMusic.clear()
+            listRecommendMusic.add(song)
+            listRecommendMusic.addAll(data)
+        })
+
+        if (getSharedPreferences("SHARE_PREFERENCES", Context.MODE_PRIVATE).getString("Uri", "") == "") {
             layout_music_play.visibility = View.GONE
         } else {
             getCurrentSong(this)
             if (online) {
-                getRecommendSong(false, startSer = false, ACTION_PLAY_SONG, this)
+                model.getRecommendMusic()
             }
         }
+
         updateUI()
 
         btnExit.setOnClickListener {
@@ -99,31 +111,7 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
         }
 
         layout_music_play.setOnClickListener {
-            activity = if (activity) {
-                finish()
-                overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
-                false
-            } else {
-                getCurrentSong(this)
-                if (online) {
-                    if (!isMyServiceRunning(MyService::class.java, this))
-                        getRecommendSong(true, startSer = true, ACTION_CHANGE, this)
-                    else
-                        getRecommendSong(true, startSer = false, ACTION_CHANGE, this)
-                } else {
-                    val intent = Intent(this, PlayActivity::class.java)
-                    startActivity(intent)
-                    overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
-                    if (!isMyServiceRunning(MyService::class.java, this)) {
-                        val bundle = Bundle()
-                        bundle.putInt("action", ACTION_CHANGE)
-                        val intent2 = Intent(this, MyService::class.java)
-                        intent2.putExtras(bundle)
-                        startService(intent2)
-                    }
-                }
-                true
-            }
+            returnPlayActivity()
         }
 
         LocalBroadcastManager.getInstance(this)
@@ -133,6 +121,57 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
 
     }
 
+
+    private fun returnPlayActivity() {
+        activity = if (activity) {
+            finish()
+            overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
+            false
+        } else {
+            getCurrentSong(this)
+            if (online) {
+                if (!isMyServiceRunning(MyService::class.java, this)) {
+                    model.getRecommendMusic()
+                    startActivityOrService(startAc = true, startSer = true, ac = ACTION_CHANGE)
+                } else {
+                    model.getRecommendMusic()
+                    startActivityOrService(startAc = true, startSer = false, ac = ACTION_CHANGE)
+                }
+            } else {
+                val intent = Intent(this, PlayActivity::class.java)
+                startActivity(intent)
+                overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
+                if (!isMyServiceRunning(MyService::class.java, this)) {
+                    val bundle = Bundle()
+                    bundle.putInt("action", ACTION_CHANGE)
+                    val intent2 = Intent(this, MyService::class.java)
+                    intent2.putExtras(bundle)
+                    startService(intent2)
+                }
+            }
+            true
+        }
+    }
+
+    private fun startActivityOrService(startAc: Boolean, startSer: Boolean, ac: Int) {
+        val bundle = Bundle()
+        bundle.putInt("action", ac)
+        if (startAc) {
+            val intent1 = Intent(this, PlayActivity::class.java)
+            intent1.putExtras(bundle)
+            val options = ActivityOptions.makeCustomAnimation(this,
+                R.anim.right_to_left,
+                R.anim.right_to_left_out)
+            startActivity(intent1, options.toBundle())
+            activity = false
+            finish()
+        }
+        if (startSer) {
+            val intent = Intent(this, MyService::class.java)
+            intent.putExtras(bundle)
+            startService(intent)
+        }
+    }
 
     private fun updateUI() {
         if ((isFavorite && listFavorite[position].isOnline) || (online && !isFavorite)) {
@@ -208,20 +247,44 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
         online = online1
         activity = activity1
         currentTime = currentTime1
-        if (isFavorite1 == 1) {
-            isFavorite = true
-            listRecommendMusic.clear()
-            listFavorite.forEach {
-                listRecommendMusic.add(Constants.getFavoriteSong(it))
-            }
-        } else
-            isFavorite = false
-
         position = position1
         if (online)
             Constants.song = song
+        if (isFavorite1 == 1) {
+            isFavorite = true
+//            listRecommendMusic.clear()
+//            listFavorite.forEach {
+//                listRecommendMusic.add(Constants.getFavoriteSong(it))
+//            }
+            if (Constants.isNetworkConnected(this) && isFavorite || !isFavorite)
+                startActivityOrService(startAc = true,
+                    startSer = true,
+                    ac = MyApplication.ACTION_PLAY_SONG)
+            else
+                Toast.makeText(this,"Không thể kết nối internet !!!",Toast.LENGTH_SHORT).show()
+        } else {
+            if (online) {
+                isFavorite = false
+                uri = song.id
+                model.getRecommendMusic()
+                if (Constants.isNetworkConnected(this))
+                    GlobalScope.launch {
+                        delay(100)
+                        startActivityOrService(startAc = true,
+                            startSer = true,
+                            ac = MyApplication.ACTION_PLAY_SONG)
+                    }
+                else
+                    Toast.makeText(this,"Không thể kết nối internet !!!",Toast.LENGTH_SHORT).show()
+            } else {
+                startActivityOrService(startAc = true,
+                    startSer = true,
+                    ac = MyApplication.ACTION_PLAY_SONG)
+            }
+        }
         layout_music_play.visibility = View.VISIBLE
         updateUI()
+
     }
 
     override fun onBackPressed() {

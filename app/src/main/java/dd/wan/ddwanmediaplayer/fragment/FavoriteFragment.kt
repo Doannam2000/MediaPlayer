@@ -76,22 +76,6 @@ class FavoriteFragment : Fragment() {
                 isFavorite1 = 1,
                 song
             )
-            if(Constants.isNetworkConnected(requireContext()) && favoriteMusic.isOnline || !favoriteMusic.isOnline) {
-                val bundle1 = Bundle()
-                bundle1.putInt("action", MyApplication.ACTION_PLAY_SONG)
-                val intent11 = Intent(context, MyService::class.java)
-                intent11.putExtras(bundle1)
-                context?.startService(intent11)!!
-
-                val intent = Intent(context, PlayActivity::class.java)
-                intent.putExtras(bundle1)
-                val options = ActivityOptions.makeCustomAnimation(context,
-                    R.anim.right_to_left,
-                    R.anim.right_to_left_out)
-                startActivity(intent, options.toBundle())
-            }else{
-                Toast.makeText(context,"Không thể kết nối internet !!!",Toast.LENGTH_LONG).show()
-            }
         }
         view.list_Favorite.adapter = adapter
         listP.addAll(listFavorite)

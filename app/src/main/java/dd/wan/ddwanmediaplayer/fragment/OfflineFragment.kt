@@ -66,7 +66,6 @@ class OfflineFragment : Fragment() {
         view.list_Podcast.setHasFixedSize(true)
         adapter = RecyclerAdapter(MyApplication.list)
         adapter.setCallback {
-
             dataTrans.ChangeData(check1 = true,
                 online1 = false,
                 activity1 = true,
@@ -74,19 +73,6 @@ class OfflineFragment : Fragment() {
                 position1 = it,
                 isFavorite1 = 0,
                 Song())
-
-            val bundle1 = Bundle()
-            bundle1.putInt("action", MyApplication.ACTION_PLAY_SONG)
-            val intent11 = Intent(context, MyService::class.java)
-            intent11.putExtras(bundle1)
-            context?.startService(intent11)!!
-
-            val intent = Intent(context, PlayActivity::class.java)
-            intent.putExtras(bundle1)
-            val options = ActivityOptions.makeCustomAnimation(context,
-                R.anim.right_to_left,
-                R.anim.right_to_left_out)
-            startActivity(intent,options.toBundle())
         }
         view.list_Podcast.adapter = adapter
 

@@ -1,34 +1,37 @@
 package dd.wan.ddwanmediaplayer.fragment
 
+import android.app.ActivityOptions
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import dd.wan.ddwanmediaplayer.MyApplication
+import dd.wan.ddwanmediaplayer.MyApplication.Companion.listRecommendMusic
 import dd.wan.ddwanmediaplayer.R
-import dd.wan.ddwanmediaplayer.`interface`.CallAPI
-import dd.wan.ddwanmediaplayer.`interface`.CallAPI.Companion.callSearchSong
 import dd.wan.ddwanmediaplayer.`interface`.DataTransmission
+import dd.wan.ddwanmediaplayer.activities.MusicOnlineActivity
+import dd.wan.ddwanmediaplayer.activities.PlayActivity
 import dd.wan.ddwanmediaplayer.adapter.RecyclerMusicAdapter
 import dd.wan.ddwanmediaplayer.adapter.RecyclerSearch
 import dd.wan.ddwanmediaplayer.config.Constants
 import dd.wan.ddwanmediaplayer.config.Constants.Companion.listSong
-import dd.wan.ddwanmediaplayer.model.search.Search
-import dd.wan.ddwanmediaplayer.model.top.Music
 import dd.wan.ddwanmediaplayer.model.top.Song
-import kotlinx.android.synthetic.main.activity_music_online.*
+import dd.wan.ddwanmediaplayer.service.MyService
+import dd.wan.ddwanmediaplayer.viewmodel.MyViewModel
 import kotlinx.android.synthetic.main.fragment_online.view.*
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class OnlineFragment : Fragment() {
 
@@ -42,7 +45,9 @@ class OnlineFragment : Fragment() {
         search()
     }
     var query = ""
-
+    val model by lazy {
+        ViewModelProvider(requireActivity()).get(MyViewModel::class.java)
+    }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -54,6 +59,83 @@ class OnlineFragment : Fragment() {
         savedInstanceState: Bundle?,
     ): View? {
         val view = inflater.inflate(R.layout.fragment_online, container, false)
+        view.listMusicOnline.layoutManager = LinearLayoutManager(context)
+        view.listSearch.layoutManager = LinearLayoutManager(context)
+
+
+        model.listTopMusic.observe(requireActivity(), Observer {
+            listSong = it
+            setUpAdapter()
+            view.listMusicOnline.adapter = adapter
+        })
+
+        model.listSearchMusic.observe(requireActivity(), Observer { data ->
+            list = data
+            setUpAdapter1()
+            view.listSearch.adapter = adapter1
+        })
+
+        if (listSong.size == 0) {
+            getData(view)
+        } else {
+            view.progressBar.visibility = View.GONE
+        }
+        setUpAdapter()
+        view.listMusicOnline.adapter = adapter
+        setUpAdapter1()
+        view.listSearch.adapter = adapter1
+
+        view.searchView.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+            }
+
+            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+            }
+
+            override fun afterTextChanged(p0: Editable?) {
+                query = view.searchView.text.toString()
+                view.listMusicOnline.visibility = View.GONE
+                view?.progressBar?.visibility = View.VISIBLE
+                handle.removeCallbacks(runnable)
+                handle.postDelayed(runnable, 1000)
+            }
+        })
+        return view
+    }
+
+    private fun getData(view: View) {
+        if (Constants.isNetworkConnected(requireContext())) {
+            model.getTopMusic()
+            view.progressBar?.visibility = View.GONE
+        } else {
+            view.progressBar?.visibility = View.GONE
+            Toast.makeText(context, "Không thể kết nối internet !!!", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun search() {
+        if (Constants.isNetworkConnected(requireContext())) {
+            if (query == "") {
+                requireView().listSearch.visibility = View.GONE
+                requireView().listMusicOnline.visibility = View.VISIBLE
+                requireView().progressBar?.visibility = View.GONE
+            } else {
+                model.getSearchMusic(query)
+                requireView().listSearch.visibility = View.VISIBLE
+                requireView().progressBar?.visibility = View.GONE
+            }
+        } else {
+            Toast.makeText(context, "Không thể kết nối internet !!!", Toast.LENGTH_LONG).show()
+        }
+    }
+
+
+    override fun onPause() {
+        super.onPause()
+        handle.removeCallbacks(runnable)
+    }
+
+    private fun setUpAdapter() {
         adapter = RecyclerMusicAdapter(listSong)
         adapter.setCallback {
             dataTrans.ChangeData(check1 = true,
@@ -63,19 +145,11 @@ class OnlineFragment : Fragment() {
                 position1 = 0,
                 isFavorite1 = 0,
                 song = listSong[it])
-            view.progressBar.visibility = View.VISIBLE
-            context?.let { it1 ->
-                Constants.getRecommendSong(true, startSer = true, MyApplication.ACTION_PLAY_SONG,
-                    it1)
-            }
+            requireView().progressBar.visibility = View.VISIBLE
         }
-        if(listSong.size==0)
-            getData(view)
-        else
-            view.progressBar.visibility = View.GONE
-        view.listMusicOnline.adapter = adapter
-        view.listMusicOnline.layoutManager = LinearLayoutManager(context)
+    }
 
+    private fun setUpAdapter1() {
         adapter1 = RecyclerSearch(list)
         adapter1.setCallback {
             val song = Song()
@@ -94,90 +168,8 @@ class OnlineFragment : Fragment() {
                 position1 = 0,
                 isFavorite1 = 0,
                 song = song)
-            view.progressBar.visibility = View.VISIBLE
-            if (Constants.isNetworkConnected(requireContext())) {
-                context?.let { it1 ->
-                    Constants.getRecommendSong(true,
-                        startSer = true,
-                        MyApplication.ACTION_PLAY_SONG,
-                        it1)
-                }
-            } else {
-                Toast.makeText(context,"Không thể kết nối internet !!!",Toast.LENGTH_LONG).show()
-            }
-
+            requireView().progressBar.visibility = View.VISIBLE
         }
-        view.listSearch.adapter = adapter1
-        view.listSearch.layoutManager = LinearLayoutManager(context)
 
-
-        view.searchView.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-            }
-
-            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-
-            }
-
-            override fun afterTextChanged(p0: Editable?) {
-                query = view.searchView.text.toString()
-                view.listMusicOnline.visibility = View.GONE
-                view?.progressBar?.visibility = View.VISIBLE
-                handle.removeCallbacks(runnable)
-                handle.postDelayed(runnable, 1000)
-            }
-        })
-
-        return view
-    }
-
-    private fun getData(view: View) {
-        if (Constants.isNetworkConnected(requireContext())) {
-            val retrofitData = CallAPI.callApi.getTopMusic(0, 0, 0, "song", -1)
-            retrofitData.enqueue(object : Callback<Music> {
-                override fun onResponse(call: Call<Music>, response: Response<Music>) {
-                    val responseBody = response.body()!!
-                    listSong.addAll(responseBody.data.song)
-                    view.progressBar?.visibility = View.GONE
-                    adapter.notifyDataSetChanged()
-                }
-
-                override fun onFailure(call: Call<Music>, t: Throwable) {
-                }
-            })
-        } else {
-            view.progressBar?.visibility = View.GONE
-            Toast.makeText(context, "Không thể kết nối internet !!!", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun search() {
-        Log.d("checkList query", query)
-        if (query == "") {
-            requireView().listSearch.visibility = View.GONE
-            requireView().listMusicOnline.visibility = View.VISIBLE
-            view?.progressBar?.visibility = View.GONE
-        } else {
-            requireView().listSearch.visibility = View.VISIBLE
-            val retrofit = callSearchSong.searchSong("song", "500", query)
-            retrofit.enqueue(object : Callback<Search> {
-                override fun onResponse(call: Call<Search>, response: Response<Search>) {
-                    val responseBody = response.body()!!
-                    list.clear()
-                    if (responseBody.data.isNotEmpty())
-                        list.addAll(responseBody.data[0].song)
-                    adapter1.notifyDataSetChanged()
-                    view?.progressBar?.visibility = View.GONE
-                }
-
-                override fun onFailure(call: Call<Search>, t: Throwable) {
-                }
-            })
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        handle.removeCallbacks(runnable)
     }
 }

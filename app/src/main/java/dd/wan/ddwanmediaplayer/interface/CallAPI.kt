@@ -17,20 +17,6 @@ import okhttp3.OkHttpClient
 
 interface CallAPI {
 
-    companion object {
-
-        val callApi = Retrofit.Builder()
-            .addConverterFactory(GsonConverterFactory.create())
-            .baseUrl(Constants.BASE_URL)
-            .build()
-            .create(CallAPI::class.java)
-
-        val callSearchSong = Retrofit.Builder()
-            .addConverterFactory(GsonConverterFactory.create())
-            .baseUrl(Constants.BASE_URL_SEARCH)
-            .build()
-            .create(CallAPI::class.java)
-    }
 
     @GET("xhr/chart-realtime")
     fun getTopMusic(

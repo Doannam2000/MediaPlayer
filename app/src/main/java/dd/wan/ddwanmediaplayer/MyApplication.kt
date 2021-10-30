@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.os.Build
 import dd.wan.ddwanmediaplayer.model.FavoriteSong
 import dd.wan.ddwanmediaplayer.model.offline.Podcast
+import dd.wan.ddwanmediaplayer.model.top.Song
 
 class MyApplication : Application() {
 
@@ -23,6 +24,7 @@ class MyApplication : Application() {
         const val ACTION_CHANGE = 7
         var list = ArrayList<Podcast>()
         var listFavorite = ArrayList<FavoriteSong>()
+        var listRecommendMusic = ArrayList<Song>()
     }
 
     override fun onCreate() {

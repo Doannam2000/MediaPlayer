@@ -27,9 +27,6 @@ class RecyclerAdapter(var list: ArrayList<Podcast>) :
         return ViewHolder(view)
     }
 
-//    override fun onBindViewHolder(holder: RecyclerAdapter.ViewHolder, position: Int) {
-//        holder.setData()
-//    }
 
     override fun getItemCount(): Int {
         return list.size

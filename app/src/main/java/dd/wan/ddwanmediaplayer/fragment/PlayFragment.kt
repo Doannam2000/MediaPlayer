@@ -7,26 +7,28 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import com.bumptech.glide.Glide
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.list
 import dd.wan.ddwanmediaplayer.MyApplication.Companion.listFavorite
 import dd.wan.ddwanmediaplayer.R
-import dd.wan.ddwanmediaplayer.`interface`.CallAPI.Companion.callApi
 import dd.wan.ddwanmediaplayer.activities.PlayActivity
 import dd.wan.ddwanmediaplayer.config.Constants
 import dd.wan.ddwanmediaplayer.model.offline.Podcast
-import dd.wan.ddwanmediaplayer.model.songinfo.SongInfo
 import dd.wan.ddwanmediaplayer.model.top.Song
+import dd.wan.ddwanmediaplayer.viewmodel.MyViewModel
 import kotlinx.android.synthetic.main.fragment_play.view.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 
 class PlayFragment : Fragment(), PlayActivity.OnDataReceivedListener {
 
+    val model by lazy {
+        ViewModelProvider(this).get(MyViewModel::class.java)
+    }
+    var typeOfSong = ""
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -34,6 +36,10 @@ class PlayFragment : Fragment(), PlayActivity.OnDataReceivedListener {
     ): View? {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_play, container, false)
+        model.typeOfSong.observe(requireActivity(), Observer {
+            view.type.text =  it
+        })
+
         val mActivity = activity as PlayActivity?
         mActivity!!.setListener(this)
         val bundle = arguments
@@ -58,7 +64,7 @@ class PlayFragment : Fragment(), PlayActivity.OnDataReceivedListener {
             AnimationUtils.loadAnimation(context, R.anim.anim_rotate)
     }
 
-    private fun setUpOff(view: View, song:Podcast){
+    private fun setUpOff(view: View, song: Podcast) {
         view.name.text = song.title
         view.artists_names.text = song.artist
         view.type.text = song.gener
@@ -76,26 +82,15 @@ class PlayFragment : Fragment(), PlayActivity.OnDataReceivedListener {
         }
     }
 
-    private fun setUpOn(view: View, song:Song){
+    private fun setUpOn(view: View, song: Song) {
         view.name.text = song.name
         view.artists_names.text = song.artists_names
-        GlobalScope.launch { getTypeMusic(song.id, view) }
+        GlobalScope.launch {  model.getTypeOfSong(song.id) }
         val linkImg = song.thumbnail.removeRange(34, 48)
         Glide.with(this).load(linkImg).into(view.imageView)
     }
 
-    private fun getTypeMusic(id: String, view: View) {
-        val call = callApi.getInfo("audio", id)
-        call.enqueue(object : Callback<SongInfo> {
-            override fun onResponse(call: Call<SongInfo>, response: Response<SongInfo>) {
-                val responseBody = response.body()!!
-                view.type.text = responseBody.data.genres[1].name
-            }
 
-            override fun onFailure(call: Call<SongInfo>, t: Throwable) {
-            }
-        })
-    }
 
     override fun onDataReceived(song: Song, position: Int, online: Boolean, isFav: Boolean) {
         setUI(requireView(), song, position, online, isFav)
