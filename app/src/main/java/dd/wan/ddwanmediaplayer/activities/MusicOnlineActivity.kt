@@ -111,7 +111,7 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
         }
 
         layout_music_play.setOnClickListener {
-            returnPlayActivity()
+            backToPlayActivity()
         }
 
         LocalBroadcastManager.getInstance(this)
@@ -122,7 +122,7 @@ class MusicOnlineActivity : AppCompatActivity(), DataTransmission {
     }
 
 
-    private fun returnPlayActivity() {
+    private fun backToPlayActivity() {
         activity = if (activity) {
             finish()
             overridePendingTransition(R.anim.right_to_left, R.anim.right_to_left_out)
